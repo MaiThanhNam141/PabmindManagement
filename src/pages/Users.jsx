@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import { db } from "../firebase/config";
-import { collection, getDocs, deleteDoc, doc, updateDoc, addDoc } from 'firebase/firestore';
-import { getAuth, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { Edit, Trash, UserPlus, ChevronRight, ChevronLeft } from 'lucide-react';
+import { collection, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { Edit, Trash, ChevronRight, ChevronLeft } from 'lucide-react';
 
 const Users = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
-    const usersPerPage = 10;
+    const usersPerPage = 100;
 
     useEffect(() => {
         const fetchUsers = async () => {
@@ -42,66 +41,6 @@ const Users = () => {
             setCurrentPage(currentPage - 1);
         }
     };
-
-    const handleAddUser = async () => {
-        const { value: formValues } = await Swal.fire({
-            title: 'Thêm người dùng mới',
-            icon: 'info',
-            showCancelButton: true,
-            cancelButtonText: 'Hủy',
-            confirmButtonText: 'Thêm',
-            html:
-                `<div style="text-align: left; margin-bottom: 10px;">
-                    <label style="display: block; font-weight: bold;">Link Avatar</label>
-                    <input id="swal-input1" class="swal2-input" placeholder="Link Avatar" style="width: 80%;">
-                </div>` +
-                `<div style="text-align: left; margin-bottom: 10px;">
-                    <label style="display: block; font-weight: bold;">Name</label>
-                    <input id="swal-input2" class="swal2-input" placeholder="Name" style="width: 80%;">
-                </div>` +
-                `<div style="text-align: left; margin-bottom: 10px;">
-                    <label style="display: block; font-weight: bold;">Email</label>
-                    <input id="swal-input3" class="swal2-input" placeholder="Email" style="width: 80%;">
-                </div>` +
-                `<div style="text-align: left; margin-bottom: 10px; position: relative; justifyContent: 'center'; alignItems: 'center',">
-                    <label style="display: block; font-weight: bold;">Mật khẩu</label>
-                    <input id="swal-input4" type="password" class="swal2-input" placeholder="Mật khẩu" style="width: 80%; padding-right: 30px;">
-                </div>`,
-            focusConfirm: false,
-            preConfirm: () => {
-                const photoURL = Swal.getPopup().querySelector('#swal-input1').value;
-                const displayName = Swal.getPopup().querySelector('#swal-input2').value;
-                const email = Swal.getPopup().querySelector('#swal-input3').value;
-                const password = Swal.getPopup().querySelector('#swal-input4').value;
-                return { photoURL, displayName, email, password };
-            }
-        });
-
-        if (formValues) {
-            const { photoURL, displayName, email, password } = formValues;
-            const auth = getAuth();
-
-            try {
-                // Create user with Firebase Authentication
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
-
-                // Update user profile with display name and photo URL
-                await updateProfile(user, { displayName, photoURL });
-
-                // Save user data in Firestore without the password
-                const newUser = { photoURL, displayName, email, uid: user.uid };
-                const docRef = await addDoc(collection(db, 'users'), newUser);
-
-                setUsers([...users, { ...newUser, id: docRef.id, index: users.length + 1 }]);
-                Swal.fire('Thành công!', 'Người dùng đã được thêm.', 'success');
-            } catch (error) {
-                console.error("Error adding user: ", error);
-                Swal.fire('Lỗi', 'Không thể thêm người dùng.', 'error');
-            }
-        }
-    };
-
 
     const handleEditUser = async (user) => {
         const { value: formValues } = await Swal.fire({
@@ -173,11 +112,6 @@ const Users = () => {
 
     return (
         <div style={styles.container}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', flexDirection: 'column', alignItems: 'center' }}>
-                <h1 style={styles.text}>Quản lý người dùng</h1>
-                <button style={styles.addButton} onClick={() => handleAddUser()}><UserPlus size={16} /> Add User</button>
-            </div>
-
             <h3 style={{ alignSelf: 'flex-start', color: '#807F7F' }}>Có {paginatedUsers.length} users trong trang này</h3>
 
             {paginatedUsers.length === 0 ? (

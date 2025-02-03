@@ -1,4 +1,4 @@
-import { BarChart2, Menu, ShoppingBag, ShoppingCart, Users, Mail, MessageCircle, Building2 } from "lucide-react";
+import { BarChart2, Menu, Users, Mail, CalendarCheck, Atom } from "lucide-react";
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -6,7 +6,8 @@ import { Link } from "react-router-dom";
 const SIDEBAR_ITEMS = [
 	{ name: "Tổng quan",icon: BarChart2, color: "#6366f1", href: "/"	},
 	{ name: "Người dùng", icon: Users, color: "#EC4899", href: "/users" },
-	{ name: "Đơn hàng", icon: ShoppingCart, color: "#F59E0B", href: "/orders" },
+	{ name: "Lịch hẹn tư vấn", icon: CalendarCheck, color: "#F59E0B", href: "/schedule" },
+	{ name: "Bài viết", icon: Atom, color: "#000000", href: "/blogs" },
 	{ name: "Thông báo", icon: Mail, color: "#E02AF4", href: "/fcm" },
 ];
 

@@ -30,36 +30,6 @@ const Login = () => {
         setShowPassword(!showPassword);
     };
 
-    const handleCheckStaff = async (email) => {
-        try {
-            const usersCollection = collection(db, 'users');
-            const staffQuery = query(usersCollection, where('email', '==', email), where('staff', '==', true));
-            const snapshot = await getDocs(staffQuery);
-
-            // Kiểm tra nếu snapshot có dữ liệu
-            if (!snapshot.empty) {
-                return true; // Email này có quyền staff
-            } else {
-                Swal.fire({
-                    title: 'Đăng nhập thất bại!',
-                    text: 'Email của bạn không được cấp quyền nhân viên.',
-                    icon: 'error',
-                    confirmButtonText: 'OK',
-                });
-                return false; // Email này không có quyền staff
-            }
-        } catch (error) {
-            console.error("Error checking staff: ", error);
-            Swal.fire({
-                title: 'Lỗi kiểm tra quyền!',
-                text: 'Đã xảy ra lỗi trong quá trình kiểm tra quyền. Vui lòng thử lại sau.',
-                icon: 'error',
-                confirmButtonText: 'OK',
-            });
-            return false;
-        }
-    };
-
     const handleLogin = async (event) => {
         event.preventDefault();
         Swal.fire({
@@ -97,11 +67,6 @@ const Login = () => {
                 confirmButtonText: 'OK',
             });
             return null;
-        }
-
-        const hasAccess = await handleCheckStaff(e);
-        if (!hasAccess) {
-            return;
         }
 
         try {
