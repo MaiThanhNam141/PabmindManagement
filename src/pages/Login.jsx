@@ -1,9 +1,8 @@
 import React, { useState, useContext } from 'react';
 import Logo from "../assets/logo.png";
-import { auth, db } from "../firebase/config"
+import { auth } from "../firebase/config"
 import Swal from 'sweetalert2';
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from '../context/AuthContext';
 import loadingGif from '../assets/loading.gif';
