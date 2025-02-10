@@ -8,6 +8,7 @@ const Users = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState('');
     const usersPerPage = 100;
 
     useEffect(() => {
@@ -15,7 +16,11 @@ const Users = () => {
             try {
                 const usersCollection = collection(db, 'users');
                 const userSnapshot = await getDocs(usersCollection);
-                const userList = userSnapshot.docs.map((doc, index) => ({ id: doc.id, ...doc.data(), index: index + 1 }));
+                const userList = userSnapshot.docs.map((doc, index) => ({
+                    id: doc.id,
+                    ...doc.data(),
+                    index: index + 1,
+                }));
                 setUsers(userList);
             } catch (error) {
                 console.error("Error fetching users: ", error);
@@ -26,55 +31,107 @@ const Users = () => {
         fetchUsers();
     }, []);
 
+    // Lọc người dùng theo tìm kiếm (theo displayName hoặc email)
+    const filteredUsers = users.filter(user =>
+        user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
     const indexOfLastUser = currentPage * usersPerPage;
     const indexOfFirstUser = indexOfLastUser - usersPerPage;
-    const paginatedUsers = users.slice(indexOfFirstUser, indexOfLastUser);
+    const paginatedUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
 
     const handleNextPage = () => {
-        if (currentPage < Math.ceil(users.length / usersPerPage)) {
-            setCurrentPage(currentPage + 1);
-        }
+        if (currentPage < totalPages) setCurrentPage(currentPage + 1);
     };
 
     const handlePreviousPage = () => {
-        if (currentPage > 1) {
-            setCurrentPage(currentPage - 1);
-        }
+        if (currentPage > 1) setCurrentPage(currentPage - 1);
     };
 
     const handleEditUser = async (user) => {
+        // Lấy phần tử cuối của mảng userType nếu có
+        const lastUserType = Array.isArray(user.userType)
+            ? user.userType[user.userType.length - 1]
+            : user.userType || '';
+
         const { value: formValues } = await Swal.fire({
             title: 'Sửa thông tin người dùng',
             icon: 'question',
             showCancelButton: true,
             cancelButtonText: 'Hủy',
-            html:
-                `<div style="text-align: left; margin-bottom: 10px;">
-                    <label style="display: block; font-weight: bold;">Link Avatar</label>
-                    <input id="swal-input1" class="swal2-input" value="${user.photoURL}" placeholder="Link Avatar" style="width: 80%;">
-                </div>` +
-                `<div style="text-align: left; margin-bottom: 10px;">
-                    <label style="display: block; font-weight: bold;">Name</label>
-                    <input id="swal-input2" class="swal2-input" value="${user.displayName}" placeholder="Name" style="width: 80%;">
-                </div>`,
+            html: `
+        <div style="text-align: left; margin-bottom: 10px;">
+          <label style="display: block; font-weight: bold;">Link Avatar</label>
+          <input id="swal-input1" class="swal2-input" value="${user.photoURL || ''}" placeholder="Link Avatar" style="width: 85%;">
+        </div>
+        <div style="text-align: left; margin-bottom: 10px;">
+          <label style="display: block; font-weight: bold;">Name</label>
+          <input id="swal-input2" class="swal2-input" value="${user.displayName || ''}" placeholder="Name" style="width: 85%;">
+        </div>
+        <div style="text-align: left; margin-bottom: 10px;">
+          <label style="display: block; font-weight: bold;">DISCType</label>
+          <input id="swal-input3" class="swal2-input" value="${user.DISCType || ''}" placeholder="DISCType" style="width: 85%;">
+        </div>
+        <div style="text-align: left; margin-bottom: 10px;">
+          <label style="display: block; font-weight: bold;">GAD7Result</label>
+          <input id="swal-input4" class="swal2-input" value="${user.GAD7Result || ''}" placeholder="GAD7Result" style="width: 85%;">
+        </div>
+        <div style="text-align: left; margin-bottom: 10px;">
+          <label style="display: block; font-weight: bold;">Address</label>
+          <input id="swal-input5" class="swal2-input" value="${user.address || ''}" placeholder="Address" style="width: 85%;">
+        </div>
+        <div style="text-align: left; margin-bottom: 10px;">
+          <label style="display: block; font-weight: bold;">Age</label>
+          <input id="swal-input6" class="swal2-input" value="${user.age || ''}" placeholder="Age" style="width: 85%;">
+        </div>
+        <div style="text-align: left; margin-bottom: 10px;">
+          <label style="display: block; font-weight: bold;">BMI</label>
+          <input id="swal-input7" class="swal2-input" value="${user.bmi || ''}" placeholder="BMI" style="width: 85%;">
+        </div>
+        <div style="text-align: left; margin-bottom: 10px;">
+          <label style="display: block; font-weight: bold;">User Type (Last Element)</label>
+          <input id="swal-input8" class="swal2-input" value="${lastUserType}" placeholder="User Type" style="width: 85%;" disabled>
+        </div>
+      `,
             focusConfirm: false,
             preConfirm: () => {
                 const photoURL = Swal.getPopup().querySelector('#swal-input1').value;
                 const displayName = Swal.getPopup().querySelector('#swal-input2').value;
-                return { photoURL, displayName };
+                const DISCType = Swal.getPopup().querySelector('#swal-input3').value;
+                const GAD7Result = Swal.getPopup().querySelector('#swal-input4').value;
+                const address = Swal.getPopup().querySelector('#swal-input5').value;
+                const age = Swal.getPopup().querySelector('#swal-input6').value;
+                const bmi = Swal.getPopup().querySelector('#swal-input7').value;
+                return { photoURL, displayName, DISCType, GAD7Result, address, age, bmi };
             }
         });
 
         if (formValues) {
             try {
-                const { photoURL, displayName } = formValues;
-                console.log(photoURL, displayName);
-                
-                // Cập nhật tài liệu Firestore của người dùng
-                await updateDoc(doc(db, "users", user.id), { photoURL, displayName });
+                const { photoURL, displayName, DISCType, GAD7Result, address, age, bmi } = formValues;
+                await updateDoc(doc(db, "users", user.id), {
+                    photoURL,
+                    displayName,
+                    DISCType,
+                    GAD7Result,
+                    address,
+                    age,
+                    bmi
+                });
                 Swal.fire('Thành công!', 'Cập nhật dữ liệu tài khoản thành công', 'success');
 
-                setUsers(users.map(u => u.id === user.id ? { ...u, photoURL, displayName } : u));
+                setUsers(users.map(u => u.id === user.id ? {
+                    ...u,
+                    photoURL,
+                    displayName,
+                    DISCType,
+                    GAD7Result,
+                    address,
+                    age,
+                    bmi
+                } : u));
             } catch (error) {
                 console.error("Error updating user: ", error);
                 Swal.fire('Thất bại!', 'Đã xảy ra lỗi nào đó', 'error');
@@ -107,75 +164,105 @@ const Users = () => {
     };
 
     if (loading) {
-        return <div>Loading...</div>;
+        return <div style={styles.loading}>Loading...</div>;
     }
 
     return (
         <div style={styles.container}>
-            <h3 style={{ alignSelf: 'flex-start', color: '#807F7F' }}>Có {paginatedUsers.length} users trong trang này</h3>
+            {/* Thêm CSS hover cho row và nút */}
+            <style>
+                {`
+          .userRow {
+            transition: background-color 0.3s, transform 0.3s;
+          }
+          .userRow:hover {
+            background-color: #f0f8ff;
+            transform: translateY(-3px);
+          }
+          .actionButton:hover {
+            transform: scale(1.1);
+          }
+        `}
+            </style>
+            <h2 style={styles.header}>Danh sách Người dùng</h2>
+            <div style={styles.searchContainer}>
+                <input
+                    type="text"
+                    placeholder="Tìm kiếm người dùng..."
+                    value={searchTerm}
+                    onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setCurrentPage(1);
+                    }}
+                    style={styles.searchInput}
+                />
+            </div>
+            <h4 style={styles.subHeader}>Có {filteredUsers.length} người dùng trong trang này</h4>
 
             {paginatedUsers.length === 0 ? (
-                <h1>Không tìm thấy người dùng nào</h1>
+                <div style={styles.noData}>Không tìm thấy người dùng nào</div>
             ) : (
-                <table style={styles.table}>
-                    <thead>
-                        <tr style={styles.tableRow}>
-                            <th>#</th>
-                            <th>Hình đại diện</th>
-                            <th>Tên hiển thị</th>
-                            <th>Email</th>
-                            <th>Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {paginatedUsers.map(user => (
-                            <tr key={user.id} style={styles.tableRow}>
-                                <td>{user.index}</td>
-                                <td>
-                                    <img
-                                        src={user.photoURL || "https://via.placeholder.com/32"}
-                                        alt={`${user.displayName}'s avatar`}
-                                        style={styles.avatar}
-                                        onError={(e) => { e.target.src = "https://via.placeholder.com/32"; }}
-                                    />
-                                </td>
-                                <td style={styles.text}>{user.displayName}</td>
-                                <td style={styles.text}>{user.email}</td>
-                                <td style={styles.actions}>
-                                    <button style={styles.actionButton} onClick={() => handleEditUser(user)}>
-                                        <Edit size={20} color='black' />
-                                    </button>
-                                    <button style={styles.actionButton} onClick={() => handleDeleteUser(user)}>
-                                        <Trash size={20} color='red' />
-                                    </button>
-                                </td>
+                <div style={styles.tableContainer}>
+                    <table style={styles.table}>
+                        <thead>
+                            <tr style={styles.tableRow}>
+                                <th style={styles.th}>#</th>
+                                <th style={styles.th}>Hình đại diện</th>
+                                <th style={styles.th}>Tên hiển thị</th>
+                                <th style={styles.th}>Email</th>
+                                <th style={styles.th}>Thao tác</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {paginatedUsers.map(user => (
+                                <tr key={user.id} className="userRow" style={styles.tableRow}>
+                                    <td style={styles.td}>{user.index}</td>
+                                    <td style={styles.td}>
+                                        <img
+                                            src={user.photoURL || "https://placehold.co/600x400"}
+                                            alt={`${user.displayName}'s avatar`}
+                                            style={styles.avatar}
+                                        />
+                                    </td>
+                                    <td style={styles.td}>{user.displayName}</td>
+                                    <td style={styles.td}>{user.email}</td>
+                                    <td style={styles.td}>
+                                        <div style={styles.actionContainer}>
+                                            <button style={styles.actionButton} className="actionButton" onClick={() => handleEditUser(user)}>
+                                                <Edit size={20} color="#4CAF50" />
+                                            </button>
+                                            <button style={styles.actionButton} className="actionButton" onClick={() => handleDeleteUser(user)}>
+                                                <Trash size={20} color="#F44336" />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             )}
 
             <div style={styles.pagination}>
-                <button style={styles.btnNavigationPage} onClick={handlePreviousPage} disabled={currentPage === 1}>
+                <button style={styles.paginationButton} onClick={handlePreviousPage} disabled={currentPage === 1}>
                     <ChevronLeft size={25} />
                 </button>
-                <div>
-                    {Array.from({ length: Math.ceil(users.length / usersPerPage) }, (_, index) => (
-                        <span key={index} style={{
-                            border: '2px solid #000',
-                            color: '#000',
-                            backgroundColor: '#f9f9f9',
-                            padding: '5px 10px',
-                            display: 'inline-block',
-                            margin: '0 5px',
-                            cursor: 'pointer'
-                        }}
-                            onClick={() => setCurrentPage(index + 1)}>
+                <div style={styles.pageNumbers}>
+                    {Array.from({ length: totalPages }, (_, index) => (
+                        <span
+                            key={index}
+                            style={{
+                                ...styles.pageNumber,
+                                backgroundColor: currentPage === index + 1 ? '#4CAF50' : '#f1f1f1',
+                                color: currentPage === index + 1 ? '#fff' : '#000',
+                            }}
+                            onClick={() => setCurrentPage(index + 1)}
+                        >
                             {index + 1}
                         </span>
                     ))}
                 </div>
-                <button style={styles.btnNavigationPage} onClick={handleNextPage} disabled={currentPage === Math.ceil(users.length / usersPerPage)}>
+                <button style={styles.paginationButton} onClick={handleNextPage} disabled={currentPage === totalPages}>
                     <ChevronRight size={25} />
                 </button>
             </div>
@@ -187,52 +274,77 @@ export default Users;
 
 const styles = {
     container: {
-        display: 'flex',
-        justifyContent: 'flex-start',
-        alignItems: 'center',
-        flexDirection: 'column',
-        padding: '20px',
-        height: '100%',
-        minHeight: '100vh',
+        maxWidth: '1200px',
+        margin: '40px auto',
+        padding: '30px',
+        fontFamily: "'Roboto', sans-serif",
+        backgroundColor: '#fff',
+        borderRadius: '12px',
+        boxShadow: '0 8px 16px rgba(0,0,0,0.1)',
     },
-    text: {
-        color: '#000',
+    header: {
+        textAlign: 'center',
+        marginBottom: '30px',
+        color: '#333',
+        fontSize: '28px',
+        fontWeight: '600',
     },
-    addButton: {
-        marginTop: '10px',
+    subHeader: {
+        textAlign: 'left',
         marginBottom: '20px',
-        padding: '8px 16px',
-        borderColor: '#4CAF50',
-        color: 'black',
-        backgroundColor: '#f7f7f7',
-        border: '10',
-        borderRadius: '4px',
-        cursor: 'pointer',
-        alignItems: 'center',
+        color: '#555',
+        fontSize: '18px',
+    },
+    searchContainer: {
+        width: '100%',
+        display: 'flex',
+        justifyContent: 'center',
+        marginBottom: '25px',
+    },
+    searchInput: {
+        width: '100%',
+        maxWidth: '400px',
+        padding: '12px 20px',
+        borderRadius: '30px',
+        border: '1px solid #ddd',
+        outline: 'none',
+        fontSize: '16px',
+        transition: 'border 0.3s',
+    },
+    tableContainer: {
+        overflowX: 'auto',
+        marginBottom: '30px',
     },
     table: {
         width: '100%',
-        overflowY: 'auto',
-        maxHeight: 'calc(100vh - 150px)',
+        borderCollapse: 'collapse',
     },
     tableRow: {
-        minHeight: '50px',
         textAlign: 'center',
-        borderBottom: '1px solid #ccc',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: '#000',
+        padding: '15px 0',
+    },
+    th: {
+        padding: '15px 10px',
+        backgroundColor: '#f9f9f9',
+        fontWeight: '600',
+        color: '#333',
+        borderBottom: '2px solid #eee',
+    },
+    td: {
+        padding: '15px 10px',
+        color: '#555',
+        borderBottom: '1px solid #eee',
     },
     avatar: {
-        width: '32px',
-        height: '32px',
+        width: '45px',
+        height: '45px',
         borderRadius: '50%',
+        objectFit: 'cover',
     },
-    actions: {
+    actionContainer: {
         display: 'flex',
-        gap: '10px',
         justifyContent: 'center',
-        height:'32px'
+        gap: '12px',
     },
     actionButton: {
         backgroundColor: 'transparent',
@@ -241,16 +353,42 @@ const styles = {
     },
     pagination: {
         display: 'flex',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
         alignItems: 'center',
+        gap: '20px',
         marginTop: '20px',
-        width: '50%',
     },
-    btnNavigationPage: {
-        backgroundColor: 'rgba(0, 0, 0, 0)',
-        width: '50px',
-        height: '80px',
+    paginationButton: {
+        backgroundColor: '#4CAF50',
+        border: 'none',
+        padding: '12px',
+        borderRadius: '50%',
         cursor: 'pointer',
-        border: '0px'
-    }
+        color: '#fff',
+        transition: 'background-color 0.3s',
+        minWidth: '50px',
+        minHeight: '50px',
+    },
+    pageNumbers: {
+        display: 'flex',
+        gap: '10px',
+    },
+    pageNumber: {
+        padding: '10px 15px',
+        borderRadius: '5px',
+        cursor: 'pointer',
+        transition: 'background-color 0.3s, transform 0.3s',
+    },
+    noData: {
+        textAlign: 'center',
+        padding: '25px',
+        color: '#999',
+        fontSize: '18px',
+    },
+    loading: {
+        textAlign: 'center',
+        padding: '60px',
+        fontSize: '20px',
+        color: '#777',
+    },
 };
