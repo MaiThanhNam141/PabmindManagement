@@ -94,6 +94,18 @@ const Users = () => {
           <label style="display: block; font-weight: bold;">User Type (Last Element)</label>
           <input id="swal-input8" class="swal2-input" value="${lastUserType}" placeholder="User Type" style="width: 85%;" disabled>
         </div>
+        <div style="text-align: left; margin-bottom: 10px;">
+          <label style="display: block; font-weight: bold;">Thẻ thành viên:</label>
+          <input id="swal-input8" class="swal2-input" value="${user?.memberActive ? "Phải" : "Không"}" placeholder="User Type" style="width: 85%;" disabled>
+        </div>
+        <div style="text-align: left; margin-bottom: 10px;">
+          <label style="display: block; font-weight: bold;">Ngày bắt đầu thẻ thành viên</label>
+          <input id="swal-input8" class="swal2-input" value="${user?.startDateMember ? user.startDateMember : "Không có"}" placeholder="User Type" style="width: 85%;" disabled>
+        </div>
+        <div style="text-align: left; margin-bottom: 10px;">
+          <label style="display: block; font-weight: bold;">Ngày hết hạn thẻ thành viên</label>
+          <input id="swal-input8" class="swal2-input" value="${user?.endDateMember ? user.endDateMember : "Không có"}" placeholder="User Type" style="width: 85%;" disabled>
+        </div>
       `,
             focusConfirm: false,
             preConfirm: () => {
