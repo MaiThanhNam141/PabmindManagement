@@ -50,6 +50,20 @@ const Users = () => {
         if (currentPage > 1) setCurrentPage(currentPage - 1);
     };
 
+    const formatTimestamp = (timestamp) => {
+        if (!timestamp || !timestamp.toDate) return "Không có";
+        
+        const date = timestamp.toDate();
+        return new Intl.DateTimeFormat('vi-VN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+        }).format(date);
+    };
+    
     const handleEditUser = async (user) => {
         // Lấy phần tử cuối của mảng userType nếu có
         const lastUserType = Array.isArray(user.userType)
@@ -96,15 +110,15 @@ const Users = () => {
         </div>
         <div style="text-align: left; margin-bottom: 10px;">
           <label style="display: block; font-weight: bold;">Thẻ thành viên:</label>
-          <input id="swal-input8" class="swal2-input" value="${user?.memberActive ? "Phải" : "Không"}" placeholder="User Type" style="width: 85%;" disabled>
+          <input id="swal-input8" class="swal2-input" value="${user?.memberActive ? "Có" : "Không"}" placeholder="User Type" style="width: 85%;" disabled>
         </div>
         <div style="text-align: left; margin-bottom: 10px;">
           <label style="display: block; font-weight: bold;">Ngày bắt đầu thẻ thành viên</label>
-          <input id="swal-input8" class="swal2-input" value="${user?.startDateMember ? user.startDateMember : "Không có"}" placeholder="User Type" style="width: 85%;" disabled>
+          <input id="swal-input8" class="swal2-input" value="${user?.startDateMember ? formatTimestamp(user.startDateMember) : "Không có"}" placeholder="User Type" style="width: 85%;" disabled>
         </div>
         <div style="text-align: left; margin-bottom: 10px;">
           <label style="display: block; font-weight: bold;">Ngày hết hạn thẻ thành viên</label>
-          <input id="swal-input8" class="swal2-input" value="${user?.endDateMember ? user.endDateMember : "Không có"}" placeholder="User Type" style="width: 85%;" disabled>
+          <input id="swal-input8" class="swal2-input" value="${user?.endDateMember ? formatTimestamp(user.endDateMember) : "Không có"}" placeholder="User Type" style="width: 85%;" disabled>
         </div>
       `,
             focusConfirm: false,
