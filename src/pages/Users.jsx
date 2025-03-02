@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
-import { auth, db } from "../firebase/config";
-import { collection, getDocs, deleteDoc, doc, updateDoc, query, orderBy, limit, startAfter } from 'firebase/firestore';
-import { getAuth } from '@firebase/auth';
+import { db } from "../firebase/config";
+import { collection, getDocs, deleteDoc, doc, updateDoc, query, orderBy, limit, startAfter, Timestamp } from 'firebase/firestore';
 import { Edit, Trash, ChevronRight, ChevronLeft } from 'lucide-react';
 
 const Users = () => {
@@ -26,34 +25,32 @@ const Users = () => {
                 orderBy('email'),
                 limit(itemPerPage)
             );
-    
+
             const dataSnapshot = await getDocs(dataQuery);
             const itemList = dataSnapshot.docs.map((doc, index) => ({
                 id: doc.id,
                 ...doc.data(),
                 index: index + 1,
             }));
-    
+
             setUsers(itemList);
-    
+
             const lastVisible = dataSnapshot.docs[dataSnapshot.docs.length - 1];
             setLastVisible(lastVisible);
-    
+
             // Fetch total number of users to calculate totalPages
             const totalDataSnapshot = await getDocs(usersCollection);
             const totalData = totalDataSnapshot.size;
             const totalPages = Math.ceil(totalData / itemPerPage);
             setTotalPages(totalPages);
-    
+
         } catch (error) {
             console.error("Error fetching users: ", error);
         } finally {
             setLoading(false);
         }
     };
-    
 
-    // Lọc người dùng theo tìm kiếm (theo displayName hoặc email)
     const filteredItems = users.filter(user =>
         user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -90,7 +87,7 @@ const Users = () => {
                 setLoading(false);
             }
         }
-    };   
+    };
 
     const handleNextPage = () => {
         if (currentPage < totalPages) {
@@ -98,47 +95,32 @@ const Users = () => {
             refetchMoreData();
         }
     };
-    
+
     const handlePreviousPage = () => {
         if (currentPage > 1) {
             setCurrentPage(currentPage - 1);
         }
     };
-    
+
     const handlePageClick = (pageIndex) => {
         setCurrentPage(pageIndex);
         if (pageIndex > currentPage) {
             refetchMoreData(pageIndex - currentPage);
         }
     };
-    
 
-    const formatTimestamp = (timestamp) => {
-        if (!timestamp || !timestamp.toDate) return "Không có";
-
+    const formatDateForInput = (timestamp) => {
+        if (!timestamp || !timestamp.toDate) return '';
         const date = timestamp.toDate();
-        return new Intl.DateTimeFormat('vi-VN', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-        }).format(date);
+        const pad = (num) => num.toString().padStart(2, '0');
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
     };
 
     const handleEditUser = async (user) => {
-        // Fetch last sign-in time from Firebase Auth metadata
-        const authUser = getAuth(auth);
-        const userAuth = await authUser.getUser(user.id); // Adjust to use Firebase Admin SDK or client SDK method
-        const lastSignInTime = userAuth.metadata.lastSignInTime;
-
-        // Get the last user type
         const lastUserType = Array.isArray(user.userType)
             ? user.userType[user.userType.length - 1]
             : user.userType || '';
 
-        // Display the Swal modal with additional fields (Last Sign-In Time, Avatar)
         const { value: formValues } = await Swal.fire({
             title: 'Sửa thông tin người dùng',
             icon: 'question',
@@ -154,40 +136,57 @@ const Users = () => {
                     <input id="swal-input2" class="swal2-input" value="${user.displayName || ''}" placeholder="Name" style="width: 85%;">
                 </div>
                 <div style="text-align: left; margin-bottom: 10px;">
-                    <label style="display: block; font-weight: bold;">Last Sign-In Time</label>
-                    <input id="swal-input3" class="swal2-input" value="${formatTimestamp(lastSignInTime)}" placeholder="Last Sign-In Time" style="width: 85%;" disabled>
-                </div>
-                <div style="text-align: left; margin-bottom: 10px;">
                     <label style="display: block; font-weight: bold;">User Type (Last Element)</label>
-                    <input id="swal-input4" class="swal2-input" value="${lastUserType}" placeholder="User Type" style="width: 85%;" disabled>
+                    <input id="swal-input3" class="swal2-input" value="${lastUserType}" placeholder="User Type" style="width: 85%;" disabled>
                 </div>
                 <div style="text-align: left; margin-bottom: 10px;">
                     <label style="display: block; font-weight: bold;">Thẻ thành viên:</label>
-                    <input id="swal-input5" class="swal2-input" value="${user?.memberActive ? "Có" : "Không"}" placeholder="User Type" style="width: 85%;" disabled>
+                    <div style="display: flex; align-items: center;">
+                        <input type="checkbox" id="swal-input4" class="swal2-input-checkbox" ${user?.memberActive ? "checked" : ""} style="width: auto; margin-right: 10px;">
+                        <label for="swal-input4" style="font-weight: normal; margin: 0;">Kích hoạt thẻ thành viên</label>
+                    </div>
                 </div>
                 <div style="text-align: left; margin-bottom: 10px;">
                     <label style="display: block; font-weight: bold;">Ngày bắt đầu thẻ thành viên</label>
-                    <input id="swal-input6" class="swal2-input" value="${user?.startDateMember ? formatTimestamp(user.startDateMember) : "Không có"}" placeholder="User Type" style="width: 85%;" disabled>
+                    <input id="swal-input5" class="swal2-input" type="date" value="${user?.startDateMember ?? formatDateForInput(user.startDateMember)}" placeholder="User Type" style="width: 85%;">
                 </div>
                 <div style="text-align: left; margin-bottom: 10px;">
                     <label style="display: block; font-weight: bold;">Ngày hết hạn thẻ thành viên</label>
-                    <input id="swal-input7" class="swal2-input" value="${user?.endDateMember ? formatTimestamp(user.endDateMember) : "Không có"}" placeholder="User Type" style="width: 85%;" disabled>
+                    <input id="swal-input6" class="swal2-input" type="date" value="${user?.endDateMember ?? formatDateForInput(user.endDateMember)}" placeholder="User Type" style="width: 85%;">
                 </div>
             `,
             focusConfirm: false,
             preConfirm: () => {
                 const photoURL = Swal.getPopup().querySelector('#swal-input1').value;
                 const displayName = Swal.getPopup().querySelector('#swal-input2').value;
-                return { photoURL, displayName };
+                const memberActive = Swal.getPopup().querySelector('#swal-input4').checked;
+                const startDateMember = Swal.getPopup().querySelector('#swal-input5')?.value;
+                const endDateMember = Swal.getPopup().querySelector('#swal-input6')?.value;
+
+                const startTimestamp = Timestamp.fromDate(new Date(startDateMember));
+                const endTimestamp = Timestamp.fromDate(new Date(endDateMember));
+                
+                if (!memberActive && (startDateMember || endDateMember)) {
+                    Swal.fire('error', 'Nếu bạn không kích hoạt thẻ thành viên, hãy xóa ngày bắt đầu và ngày kết thúc', 'error');
+                    return false;
+                }
+                if (memberActive && (!startDateMember || !endDateMember)) {
+                    Swal.fire('error', 'Bạn cần nhập đầy đủ ngày bắt đầu và ngày kết thúc thẻ thành viên', 'error');
+                    return false;
+                }
+                if (memberActive && (new Date(startDateMember) > new Date(endDateMember))) {
+                    Swal.fire('error', 'Ngày bắt đầu không được lớn hơn ngày kết thúc', 'error');
+                    return false;
+                }
+                return { photoURL, displayName, memberActive, startDateMember: startTimestamp, endDateMember: endTimestamp };
             }
         });
 
         if (formValues) {
             try {
-                const { photoURL, displayName } = formValues;
-                await updateDoc(doc(db, "users", user.id), { photoURL, displayName });
+                await updateDoc(doc(db, "users", user.id), formValues);
                 Swal.fire('Thành công!', 'Cập nhật dữ liệu tài khoản thành công', 'success');
-                setUsers(users.map(u => u.id === user.id ? { ...u, photoURL, displayName } : u));
+                setUsers(users.map(u => u.id === user.id ? { ...u, photoURL, displayName, memberActive, startDateMember, endDateMember } : u));
             } catch (error) {
                 console.error("Error updating user: ", error);
                 Swal.fire('Thất bại!', 'Đã xảy ra lỗi nào đó', 'error');
@@ -228,17 +227,17 @@ const Users = () => {
             {/* Thêm CSS hover cho row và nút */}
             <style>
                 {`
-          .userRow {
-            transition: background-color 0.3s, transform 0.3s;
-          }
-          .userRow:hover {
-            background-color: #f0f8ff;
-            transform: translateY(-3px);
-          }
-          .actionButton:hover {
-            transform: scale(1.1);
-          }
-        `}
+                    .userRow {
+                        transition: background-color 0.3s, transform 0.3s;
+                    }
+                    .userRow:hover {
+                        background-color: #f0f8ff;
+                        transform: translateY(-3px);
+                    }
+                    .actionButton:hover {
+                        transform: scale(1.1);
+                    }
+                `}
             </style>
             <h2 style={styles.header}>Danh sách Người dùng</h2>
             <div style={styles.searchContainer}>
