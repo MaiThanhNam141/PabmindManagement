@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
-import { db } from "../firebase/config";
-import { collection, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { auth, db } from "../firebase/config";
+import { collection, getDocs, deleteDoc, doc, updateDoc, query, orderBy, limit, startAfter } from 'firebase/firestore';
+import { getAuth } from '@firebase/auth';
 import { Edit, Trash, ChevronRight, ChevronLeft } from 'lucide-react';
 
 const Users = () => {
@@ -9,50 +10,112 @@ const Users = () => {
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
-    const usersPerPage = 100;
+    const [lastVisible, setLastVisible] = useState(null);
+    const [totalPages, setTotalPages] = useState(0);
+    const itemPerPage = 50;
 
     useEffect(() => {
-        const fetchUsers = async () => {
-            try {
-                const usersCollection = collection(db, 'users');
-                const userSnapshot = await getDocs(usersCollection);
-                const userList = userSnapshot.docs.map((doc, index) => ({
-                    id: doc.id,
-                    ...doc.data(),
-                    index: index + 1,
-                }));
-                setUsers(userList);
-            } catch (error) {
-                console.error("Error fetching users: ", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchUsers();
+        fetchData();
     }, []);
 
+    const fetchData = async () => {
+        try {
+            const usersCollection = collection(db, 'users');
+            const dataQuery = query(
+                usersCollection,
+                orderBy('email'),
+                limit(itemPerPage)
+            );
+    
+            const dataSnapshot = await getDocs(dataQuery);
+            const itemList = dataSnapshot.docs.map((doc, index) => ({
+                id: doc.id,
+                ...doc.data(),
+                index: index + 1,
+            }));
+    
+            setUsers(itemList);
+    
+            const lastVisible = dataSnapshot.docs[dataSnapshot.docs.length - 1];
+            setLastVisible(lastVisible);
+    
+            // Fetch total number of users to calculate totalPages
+            const totalDataSnapshot = await getDocs(usersCollection);
+            const totalData = totalDataSnapshot.size;
+            const totalPages = Math.ceil(totalData / itemPerPage);
+            setTotalPages(totalPages);
+    
+        } catch (error) {
+            console.error("Error fetching users: ", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+    
+
     // Lọc người dùng theo tìm kiếm (theo displayName hoặc email)
-    const filteredUsers = users.filter(user =>
+    const filteredItems = users.filter(user =>
         user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
-    const indexOfLastUser = currentPage * usersPerPage;
-    const indexOfFirstUser = indexOfLastUser - usersPerPage;
-    const paginatedUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+    const indexOfLastUser = currentPage * itemPerPage;
+    const indexOfFirstUser = indexOfLastUser - itemPerPage;
+    const paginatedUsers = filteredItems.slice(indexOfFirstUser, indexOfLastUser);
+
+    const refetchMoreData = async (multiple = 1) => {
+        if (lastVisible) {
+            try {
+                setLoading(true);
+                const usersCollection = collection(db, 'users');
+                const dataQuery = query(
+                    usersCollection,
+                    orderBy('email'),
+                    startAfter(lastVisible),
+                    limit(itemPerPage * multiple)
+                );
+
+                const dataSnapshot = await getDocs(dataQuery);
+                const itemList = dataSnapshot.docs.map((doc, index) => ({
+                    id: doc.id,
+                    ...doc.data(),
+                    index: index + 1,
+                }));
+
+                setUsers(prev => [...prev, ...itemList]);
+                setLastVisible(dataSnapshot.docs[dataSnapshot.docs.length - 1]);
+            } catch (error) {
+                console.error("Error fetching next page: ", error);
+            } finally {
+                setLoading(false);
+            }
+        }
+    };   
 
     const handleNextPage = () => {
-        if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+            refetchMoreData();
+        }
     };
-
+    
     const handlePreviousPage = () => {
-        if (currentPage > 1) setCurrentPage(currentPage - 1);
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
     };
+    
+    const handlePageClick = (pageIndex) => {
+        setCurrentPage(pageIndex);
+        if (pageIndex > currentPage) {
+            refetchMoreData(pageIndex - currentPage);
+        }
+    };
+    
 
     const formatTimestamp = (timestamp) => {
         if (!timestamp || !timestamp.toDate) return "Không có";
-        
+
         const date = timestamp.toDate();
         return new Intl.DateTimeFormat('vi-VN', {
             hour: '2-digit',
@@ -63,101 +126,68 @@ const Users = () => {
             year: 'numeric',
         }).format(date);
     };
-    
+
     const handleEditUser = async (user) => {
-        // Lấy phần tử cuối của mảng userType nếu có
+        // Fetch last sign-in time from Firebase Auth metadata
+        const authUser = getAuth(auth);
+        const userAuth = await authUser.getUser(user.id); // Adjust to use Firebase Admin SDK or client SDK method
+        const lastSignInTime = userAuth.metadata.lastSignInTime;
+
+        // Get the last user type
         const lastUserType = Array.isArray(user.userType)
             ? user.userType[user.userType.length - 1]
             : user.userType || '';
 
+        // Display the Swal modal with additional fields (Last Sign-In Time, Avatar)
         const { value: formValues } = await Swal.fire({
             title: 'Sửa thông tin người dùng',
             icon: 'question',
             showCancelButton: true,
             cancelButtonText: 'Hủy',
             html: `
-        <div style="text-align: left; margin-bottom: 10px;">
-          <label style="display: block; font-weight: bold;">Link Avatar</label>
-          <input id="swal-input1" class="swal2-input" value="${user.photoURL || ''}" placeholder="Link Avatar" style="width: 85%;">
-        </div>
-        <div style="text-align: left; margin-bottom: 10px;">
-          <label style="display: block; font-weight: bold;">Name</label>
-          <input id="swal-input2" class="swal2-input" value="${user.displayName || ''}" placeholder="Name" style="width: 85%;">
-        </div>
-        <div style="text-align: left; margin-bottom: 10px;">
-          <label style="display: block; font-weight: bold;">DISCType</label>
-          <input id="swal-input3" class="swal2-input" value="${user.DISCType || ''}" placeholder="DISCType" style="width: 85%;">
-        </div>
-        <div style="text-align: left; margin-bottom: 10px;">
-          <label style="display: block; font-weight: bold;">GAD7Result</label>
-          <input id="swal-input4" class="swal2-input" value="${user.GAD7Result || ''}" placeholder="GAD7Result" style="width: 85%;">
-        </div>
-        <div style="text-align: left; margin-bottom: 10px;">
-          <label style="display: block; font-weight: bold;">Address</label>
-          <input id="swal-input5" class="swal2-input" value="${user.address || ''}" placeholder="Address" style="width: 85%;">
-        </div>
-        <div style="text-align: left; margin-bottom: 10px;">
-          <label style="display: block; font-weight: bold;">Age</label>
-          <input id="swal-input6" class="swal2-input" value="${user.age || ''}" placeholder="Age" style="width: 85%;">
-        </div>
-        <div style="text-align: left; margin-bottom: 10px;">
-          <label style="display: block; font-weight: bold;">BMI</label>
-          <input id="swal-input7" class="swal2-input" value="${user.bmi || ''}" placeholder="BMI" style="width: 85%;">
-        </div>
-        <div style="text-align: left; margin-bottom: 10px;">
-          <label style="display: block; font-weight: bold;">User Type (Last Element)</label>
-          <input id="swal-input8" class="swal2-input" value="${lastUserType}" placeholder="User Type" style="width: 85%;" disabled>
-        </div>
-        <div style="text-align: left; margin-bottom: 10px;">
-          <label style="display: block; font-weight: bold;">Thẻ thành viên:</label>
-          <input id="swal-input8" class="swal2-input" value="${user?.memberActive ? "Có" : "Không"}" placeholder="User Type" style="width: 85%;" disabled>
-        </div>
-        <div style="text-align: left; margin-bottom: 10px;">
-          <label style="display: block; font-weight: bold;">Ngày bắt đầu thẻ thành viên</label>
-          <input id="swal-input8" class="swal2-input" value="${user?.startDateMember ? formatTimestamp(user.startDateMember) : "Không có"}" placeholder="User Type" style="width: 85%;" disabled>
-        </div>
-        <div style="text-align: left; margin-bottom: 10px;">
-          <label style="display: block; font-weight: bold;">Ngày hết hạn thẻ thành viên</label>
-          <input id="swal-input8" class="swal2-input" value="${user?.endDateMember ? formatTimestamp(user.endDateMember) : "Không có"}" placeholder="User Type" style="width: 85%;" disabled>
-        </div>
-      `,
+                <div style="text-align: left; margin-bottom: 10px;">
+                    <label style="display: block; font-weight: bold;">Link Avatar</label>
+                    <input id="swal-input1" class="swal2-input" value="${user.photoURL || ''}" placeholder="Link Avatar" style="width: 85%;">
+                </div>
+                <div style="text-align: left; margin-bottom: 10px;">
+                    <label style="display: block; font-weight: bold;">Name</label>
+                    <input id="swal-input2" class="swal2-input" value="${user.displayName || ''}" placeholder="Name" style="width: 85%;">
+                </div>
+                <div style="text-align: left; margin-bottom: 10px;">
+                    <label style="display: block; font-weight: bold;">Last Sign-In Time</label>
+                    <input id="swal-input3" class="swal2-input" value="${formatTimestamp(lastSignInTime)}" placeholder="Last Sign-In Time" style="width: 85%;" disabled>
+                </div>
+                <div style="text-align: left; margin-bottom: 10px;">
+                    <label style="display: block; font-weight: bold;">User Type (Last Element)</label>
+                    <input id="swal-input4" class="swal2-input" value="${lastUserType}" placeholder="User Type" style="width: 85%;" disabled>
+                </div>
+                <div style="text-align: left; margin-bottom: 10px;">
+                    <label style="display: block; font-weight: bold;">Thẻ thành viên:</label>
+                    <input id="swal-input5" class="swal2-input" value="${user?.memberActive ? "Có" : "Không"}" placeholder="User Type" style="width: 85%;" disabled>
+                </div>
+                <div style="text-align: left; margin-bottom: 10px;">
+                    <label style="display: block; font-weight: bold;">Ngày bắt đầu thẻ thành viên</label>
+                    <input id="swal-input6" class="swal2-input" value="${user?.startDateMember ? formatTimestamp(user.startDateMember) : "Không có"}" placeholder="User Type" style="width: 85%;" disabled>
+                </div>
+                <div style="text-align: left; margin-bottom: 10px;">
+                    <label style="display: block; font-weight: bold;">Ngày hết hạn thẻ thành viên</label>
+                    <input id="swal-input7" class="swal2-input" value="${user?.endDateMember ? formatTimestamp(user.endDateMember) : "Không có"}" placeholder="User Type" style="width: 85%;" disabled>
+                </div>
+            `,
             focusConfirm: false,
             preConfirm: () => {
                 const photoURL = Swal.getPopup().querySelector('#swal-input1').value;
                 const displayName = Swal.getPopup().querySelector('#swal-input2').value;
-                const DISCType = Swal.getPopup().querySelector('#swal-input3').value;
-                const GAD7Result = Swal.getPopup().querySelector('#swal-input4').value;
-                const address = Swal.getPopup().querySelector('#swal-input5').value;
-                const age = Swal.getPopup().querySelector('#swal-input6').value;
-                const bmi = Swal.getPopup().querySelector('#swal-input7').value;
-                return { photoURL, displayName, DISCType, GAD7Result, address, age, bmi };
+                return { photoURL, displayName };
             }
         });
 
         if (formValues) {
             try {
-                const { photoURL, displayName, DISCType, GAD7Result, address, age, bmi } = formValues;
-                await updateDoc(doc(db, "users", user.id), {
-                    photoURL,
-                    displayName,
-                    DISCType,
-                    GAD7Result,
-                    address,
-                    age,
-                    bmi
-                });
+                const { photoURL, displayName } = formValues;
+                await updateDoc(doc(db, "users", user.id), { photoURL, displayName });
                 Swal.fire('Thành công!', 'Cập nhật dữ liệu tài khoản thành công', 'success');
-
-                setUsers(users.map(u => u.id === user.id ? {
-                    ...u,
-                    photoURL,
-                    displayName,
-                    DISCType,
-                    GAD7Result,
-                    address,
-                    age,
-                    bmi
-                } : u));
+                setUsers(users.map(u => u.id === user.id ? { ...u, photoURL, displayName } : u));
             } catch (error) {
                 console.error("Error updating user: ", error);
                 Swal.fire('Thất bại!', 'Đã xảy ra lỗi nào đó', 'error');
@@ -223,7 +253,7 @@ const Users = () => {
                     style={styles.searchInput}
                 />
             </div>
-            <h4 style={styles.subHeader}>Có {filteredUsers.length} người dùng trong trang này</h4>
+            <h4 style={styles.subHeader}>Có {paginatedUsers.length} người dùng trong trang này</h4>
 
             {paginatedUsers.length === 0 ? (
                 <div style={styles.noData}>Không tìm thấy người dùng nào</div>
@@ -282,7 +312,7 @@ const Users = () => {
                                 backgroundColor: currentPage === index + 1 ? '#4CAF50' : '#f1f1f1',
                                 color: currentPage === index + 1 ? '#fff' : '#000',
                             }}
-                            onClick={() => setCurrentPage(index + 1)}
+                            onClick={() => handlePageClick(index + 1)}
                         >
                             {index + 1}
                         </span>
