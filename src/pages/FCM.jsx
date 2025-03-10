@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Swal from 'sweetalert2'
 import { Loader2 } from 'lucide-react'
+import CryptoJS from 'crypto-js'
 
 const FCM = () => {
     const [title, setTitle] = useState('');
@@ -8,16 +9,24 @@ const FCM = () => {
     const [token, setToken] = useState('');
     const [isSending, setIsSending] = useState(false);
 
+    const integrity = import.meta.env.VITE_SECRET_HASH_KEY;
+
+    const generateSecretKey = (data) => {
+        return CryptoJS.SHA256(data + integrity).toString(CryptoJS.enc.Hex);
+    };
+
     const sendNotificationToUser = async (title, body, token) => {
+        const secretKey = generateSecretKey(`${token}${title}${body}`);
         try {
-            const response = await fetch('https://us-central1-namthanhstores.cloudfunctions.net/sendNotificationToUser', {
+            const response = await fetch(import.meta.env.VITE_SEND_MESS_ONE_USER, {
                 method: 'POST',
+                mode: 'cors',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ title, body, token }),
+                body: JSON.stringify({ title, body, token, secretKey }),
             })
-    
+
             if (response.ok) {
                 console.log('Successfully sent message to user');
                 return true;
@@ -32,15 +41,18 @@ const FCM = () => {
     }
 
     const sendFCMNotification = async (title, body) => {
+        const secretKey = generateSecretKey(`${title}${body}`);
+
         try {
-            const response = await fetch('https://us-central1-namthanhstores.cloudfunctions.net/sendNotification', {
+            const response = await fetch(import.meta.env.VITE_SEND_MESS_ALL_USER, {
                 method: 'POST',
+                mode: 'cors',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ title, body }),
+                body: JSON.stringify({ title, body, secretKey }),
             })
-    
+
             if (response.ok) {
                 console.log('Successfully sent message');
                 return true;
@@ -53,7 +65,7 @@ const FCM = () => {
             throw error;
         }
     }
-    
+
 
     const handleSend = async () => {
         if (!title || !body) {
@@ -214,9 +226,9 @@ const styles = {
         border: '1px solid #87bc9d',
         borderRadius: '0.375rem',
         outline: 'none',
-        height:'15%',
-        maxWidth:'95%',
-        minWidth:'95%',
+        height: '15%',
+        maxWidth: '95%',
+        minWidth: '95%',
     },
 
     button: {

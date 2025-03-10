@@ -15,6 +15,7 @@
     "@firebase/firestore": "^4.7.6",
     "@firebase/storage": "^0.13.5",
     "chart.js": "^4.4.7",
+    "crypto-js": "^4.2.0",
     "dotenv": "^16.4.7",
     "firebase": "^11.2.0",
     "firebase-admin": "^13.0.2",
