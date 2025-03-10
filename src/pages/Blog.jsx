@@ -77,9 +77,9 @@ const Blog = () => {
         urlImages: downloadURL,
         storagePath,
       });
-      fetchBlogs();
       Swal.fire('Thành công', 'Bài viết đã được thêm!', 'success');
-      // Reset form
+      setBlogs(prev => [...prev, { id: randomNumber, title, link, urlImages, storagePath }])
+
       setTitle('');
       setShareLink('');
       setFileUpload(null);
@@ -109,7 +109,7 @@ const Blog = () => {
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const data = docSnap.data();
-        const storagePath = data.storagePath; // đường dẫn file đã lưu
+        const storagePath = await data.storagePath; // đường dẫn file đã lưu
         if (storagePath) {
           // Xóa file trong Storage
           const fileRef = ref(storage, storagePath);
@@ -119,7 +119,7 @@ const Blog = () => {
         }
         // Sau đó xóa document trong Firestore
         await deleteDoc(docRef);
-        fetchBlogs();
+        setBlogs(prev => prev.filter(item => item.id !== id));
         Swal.fire('Đã xóa!', 'Bài viết đã được xóa thành công', 'success');
       } else {
         Swal.fire('Lỗi', 'Không tìm thấy dữ liệu cần xóa', 'error');
