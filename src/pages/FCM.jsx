@@ -15,6 +15,35 @@ const FCM = () => {
         return CryptoJS.SHA256(data + integrity).toString(CryptoJS.enc.Hex);
     };
 
+    const confirmAndSendNotification = () => {
+        if (!title || !body) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi',
+                text: 'Vui lòng nhập cả tiêu đề và nội dung thông báo',
+            });
+            return;
+        }
+    
+        Swal.fire({
+            title: 'Xác nhận gửi thông báo',
+            html: `
+                <p><strong>📢 Tiêu đề:</strong> ${title}</p>
+                <p><strong>📝 Nội dung:</strong> ${body}</p>
+                ${token ? `<p><strong>🔑 Token:</strong> ${token}</p>` : ''}
+                <p>Bạn có chắc muốn gửi thông báo này?</p>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Gửi ngay 🚀',
+            cancelButtonText: 'Hủy',
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                await handleSend(); // Gọi hàm gửi thông báo
+            }
+        });
+    };    
+
     const sendNotificationToUser = async (title, body, token) => {
         const secretKey = generateSecretKey(`${token}${title}${body}`);
         try {
@@ -89,9 +118,6 @@ const FCM = () => {
                 title: 'Thành công',
                 text: 'Đã gửi thông báo thành công',
             })
-            setTitle('');
-            setBody('');
-            setToken('');
         } catch (error) {
             Swal.fire({
                 icon: 'error',
@@ -152,7 +178,7 @@ const FCM = () => {
             </div>
             <div>
                 <button
-                    onClick={handleSend}
+                    onClick={confirmAndSendNotification}
                     disabled={isSending}
                     style={isSending ? styles.disabledButton : styles.button}
                 >
