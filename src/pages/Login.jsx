@@ -33,10 +33,6 @@ const Login = () => {
         setShowPassword(!showPassword);
     };
 
-    const handleCaptchaChange = (value) => {
-        setCaptchaValue(value);
-    };
-
     const handleLogin = async (event) => {
         event.preventDefault();
 
@@ -224,7 +220,7 @@ const Login = () => {
                             <button
                                 type="submit"
                                 onClick={handleLogin}
-                                class='btn'
+                                className='btn'
                             >
                                 Đăng nhập
                             </button>

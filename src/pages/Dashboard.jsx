@@ -43,7 +43,7 @@ const Dashboard = () => {
                 <span>{currentUser.email}</span>
                 <button
                   onClick={handleLogout}
-                  class="btn"
+                  className="btn"
                 >
                   Đăng xuất
                 </button>
