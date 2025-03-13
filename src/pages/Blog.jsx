@@ -78,7 +78,7 @@ const Blog = () => {
         storagePath,
       });
       Swal.fire('Thành công', 'Bài viết đã được thêm!', 'success');
-      setBlogs(prev => [...prev, { id: randomNumber, title, link, urlImages, storagePath }])
+      setBlogs(prev => [...prev, { id: randomNumber, title, link: shareLink, urlImages: downloadURL, storagePath }])
 
       setTitle('');
       setShareLink('');
