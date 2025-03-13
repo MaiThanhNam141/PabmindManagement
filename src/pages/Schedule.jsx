@@ -134,6 +134,10 @@ const Schedule = () => {
                     <input id="swal-input5" class="swal2-input" placeholder="Chủ đề" style="width: 85%;">
                 </div>
                 <div style="text-align: left; margin-bottom: 10px;">
+                    <label style="display: block; font-weight: bold;">Email</label>
+                    <input id="swal-inputemail" class="swal2-input" placeholder="Chủ đề" style="width: 85%;">
+                </div>
+                <div style="text-align: left; margin-bottom: 10px;">
                     <label style="display: block; font-weight: bold;">Hình thức tư vấn</label>
                     <input id="swal-input6" class="swal2-input" placeholder="Hình thức tư vấn" style="width: 85%;">
                 </div>    
@@ -162,12 +166,13 @@ const Schedule = () => {
                     displayName: document.getElementById('swal-input1').value,
                     phone: document.getElementById('swal-input2').value,
                     address: document.getElementById('swal-input3').value,
+                    email: document.getElementById('swal-inputemail').value,
                     servicePackage: document.getElementById('swal-input4').value,
                     topic: document.getElementById('swal-input5').value,
                     adviseDirect: document.getElementById('swal-input6').value,
                     age: document.getElementById('swal-input9').value,
                     consultationDate: Timestamp.fromDate(consultationDate),
-                    time: Timestamp.fromDate(new Date()) // Thời gian hiện tại
+                    time: Timestamp.fromDate(new Date())
                 };
             }
         });
@@ -216,15 +221,16 @@ const Schedule = () => {
         Swal.fire({
             title: 'Thông tin chi tiết',
             html: `
-                <p><strong>Tên:</strong> ${appointment.displayName}</p>
-                <p><strong>Số điện thoại:</strong> ${appointment.phone}</p>
-                <p><strong>Địa chỉ:</strong> ${appointment.address}</p>
-                <p><strong>Gói dịch vụ:</strong> ${appointment.servicePackage}</p>
-                <p><strong>Chủ đề:</strong> ${appointment.topic}</p>
-                <p><strong>Hình thức tư vấn:</strong> ${appointment.adviseDirect}</p>
-                <p><strong>Tuổi:</strong> ${appointment.age}</p>
-                <p><strong>Ngày hẹn:</strong> ${formatTimestamp(appointment.consultationDate)}</p>
-                <p><strong>Ngày đặt lịch:</strong> ${formatTimestamp(appointment.time)}</p>
+                <p><strong>Tên:</strong> ${appointment?.displayName || "Không có dữ liệu"}</p>
+                <p><strong>Số điện thoại:</strong> ${appointment?.phone || "Không có dữ liệu"}</p>
+                <p><strong>Địa chỉ:</strong> ${appointment?.address || "Không có dữ liệu"}</p>
+                <p><strong>Địa chỉ:</strong> ${appointment?.email || "Không có dữ liệu"}</p>
+                <p><strong>Gói dịch vụ:</strong> ${appointment?.servicePackage || "Không có dữ liệu"}</p>
+                <p><strong>Chủ đề:</strong> ${appointment?.topic || "Không có dữ liệu"}</p>
+                <p><strong>Hình thức tư vấn:</strong> ${appointment?.adviseDirect || "Không có dữ liệu"}</p>
+                <p><strong>Tuổi:</strong> ${appointment?.age || "Không có dữ liệu"}</p>
+                <p><strong>Ngày hẹn:</strong> ${formatTimestamp(appointment?.consultationDate) || "Không có dữ liệu"}</p>
+                <p><strong>Ngày đặt lịch:</strong> ${formatTimestamp(appointment?.time) || "Không có dữ liệu"}</p>
             `,
             confirmButtonText: 'Đóng'
         });
@@ -236,39 +242,43 @@ const Schedule = () => {
             html: `
                 <div style="text-align: left; margin-bottom: 10px;">
                     <label style="display: block; font-weight: bold;">Tên khách hàng</label>
-                    <input id="swal-input1" class="swal2-input" value="${appointment.displayName}" placeholder="Tên khách hàng" style="width: 85%;">
+                    <input id="swal-input1" class="swal2-input" value="${appointment?.displayName}" placeholder="Tên khách hàng" style="width: 85%;">
                 </div>
                 <div style="text-align: left; margin-bottom: 10px;">
                     <label style="display: block; font-weight: bold;">Số điện thoại</label>
-                    <input id="swal-input2" class="swal2-input" value="${appointment.phone}" placeholder="Số điện thoại" style="width: 85%;">
+                    <input id="swal-input2" class="swal2-input" value="${appointment?.phone}" placeholder="Số điện thoại" style="width: 85%;">
                 </div>
                 <div style="text-align: left; margin-bottom: 10px;">
                     <label style="display: block; font-weight: bold;">Địa chỉ</label>
-                    <input id="swal-input3" class="swal2-input" value="${appointment.address}" placeholder="Địa chỉ" style="width: 85%;">
+                    <input id="swal-input3" class="swal2-input" value="${appointment?.address}" placeholder="Địa chỉ" style="width: 85%;">
+                </div>
+                <div style="text-align: left; margin-bottom: 10px;">
+                    <label style="display: block; font-weight: bold;">Email</label>
+                    <input id="swal-email" class="swal2-input" value="${appointment?.email}" placeholder="Địa chỉ" style="width: 85%;">
                 </div>
                 <div style="text-align: left; margin-bottom: 10px;">
                     <label style="display: block; font-weight: bold;">Gói dịch vụ</label>
-                    <input id="swal-input4" class="swal2-input" value="${appointment.servicePackage}" placeholder="Gói dịch vụ" style="width: 85%;">
+                    <input id="swal-input4" class="swal2-input" value="${appointment?.servicePackage}" placeholder="Gói dịch vụ" style="width: 85%;">
                 </div>
                 <div style="text-align: left; margin-bottom: 10px;">
                     <label style="display: block; font-weight: bold;">Chủ đề</label>
-                    <input id="swal-input5" class="swal2-input" value="${appointment.topic}" placeholder="Chủ đề" style="width: 85%;">
+                    <input id="swal-input5" class="swal2-input" value="${appointment?.topic}" placeholder="Chủ đề" style="width: 85%;">
                 </div>
                 <div style="text-align: left; margin-bottom: 10px;">
                     <label style="display: block; font-weight: bold;">Hình thức tư vấn</label>
-                    <input id="swal-input6" class="swal2-input" value="${appointment.adviseDirect}" placeholder="Hình thức tư vấn" style="width: 85%;">
+                    <input id="swal-input6" class="swal2-input" value="${appointment?.adviseDirect}" placeholder="Hình thức tư vấn" style="width: 85%;">
                 </div>          
                 <div style="text-align: left; margin-bottom: 10px;">
                     <label style="display: block; font-weight: bold;">Tuổi</label>
-                    <input id="swal-input9" class="swal2-input" value="${appointment.age}" placeholder="Tuổi" style="width: 85%;">
+                    <input id="swal-input9" class="swal2-input" value="${appointment?.age}" placeholder="Tuổi" style="width: 85%;">
                 </div>          
                 <div style="text-align: left; margin-bottom: 10px;">
                     <label style="display: block; font-weight: bold;">Ngày tư vấn</label>
-                    <input id="swal-input7-date" type="date" class="swal2-input" value="${formatDateForInput(appointment.consultationDate)}" style="width: 85%;">
+                    <input id="swal-input7-date" type="date" class="swal2-input" value="${formatDateForInput(appointment?.consultationDate)}" style="width: 85%;">
                 </div>
                 <div style="text-align: left; margin-bottom: 10px;">
                     <label style="display: block; font-weight: bold;">Giờ tư vấn</label>
-                    <input id="swal-input7-time" type="time" class="swal2-input" value="${formatTimeForInput(appointment.consultationDate)}" style="width: 85%;">
+                    <input id="swal-input7-time" type="time" class="swal2-input" value="${formatTimeForInput(appointment?.consultationDate)}" style="width: 85%;">
                 </div>
                 <div style="text-align: left; margin-bottom: 10px;">
                     <label style="display: block; font-weight: bold;">Ngày đặt hẹn</label>
@@ -287,6 +297,7 @@ const Schedule = () => {
                     displayName: document.getElementById('swal-input1').value,
                     phone: document.getElementById('swal-input2').value,
                     address: document.getElementById('swal-input3').value,
+                    email: document.getElementById('swal-email').value,
                     servicePackage: document.getElementById('swal-input4').value,
                     topic: document.getElementById('swal-input5').value,
                     adviseDirect: document.getElementById('swal-input6').value,
