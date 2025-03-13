@@ -6,6 +6,8 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from '../context/AuthContext';
 import loadingGif from '../assets/loading.gif';
+import ReCAPTCHA from "react-google-recaptcha";
+
 import '../style/Login.css'
 
 const Login = () => {
@@ -13,6 +15,8 @@ const Login = () => {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState(null);
+    const [captchaValue, setCaptchaValue] = useState(null);
+
     const navigate = useNavigate();
 
     const { dispatch } = useContext(AuthContext)
@@ -29,8 +33,23 @@ const Login = () => {
         setShowPassword(!showPassword);
     };
 
+    const handleCaptchaChange = (value) => {
+        setCaptchaValue(value);
+    };
+
     const handleLogin = async (event) => {
         event.preventDefault();
+
+        if (!captchaValue) {
+            Swal.fire({
+                title: 'Xác nhận CAPTCHA',
+                text: 'Vui lòng xác nhận bạn không phải là robot.',
+                icon: 'warning',
+                confirmButtonText: 'OK',
+            });
+            return;
+        }
+
         Swal.fire({
             title: 'Đang đăng nhập...',
             html: `<img src="${loadingGif}" alt="Loading" style="width: 350px; height: 150px;" />`,
@@ -192,6 +211,12 @@ const Login = () => {
                                         </svg>
                                     )}
                                 </button>
+                            </div>
+                            <div style={{ textAlign: 'center', marginBottom: '15px' }}>
+                                <ReCAPTCHA
+                                    sitekey={import.meta.env.VITE_GOOGLE_CAPTCHA}
+                                    onChange={setCaptchaValue}
+                                />
                             </div>
                         </div>
 

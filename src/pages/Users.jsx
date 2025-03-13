@@ -117,9 +117,13 @@ const Users = () => {
     };
 
     const handleEditUser = async (user) => {
-        const lastUserType = Array.isArray(user.userType)
+        const lastUserType = Array.isArray(user?.userType)
             ? user.userType[user.userType.length - 1]
             : user.userType || '';
+
+        const isVoucherExist = Array.isArray(user?.inventory) ? user.inventory.find((item) => {
+            return item === "VoucherAdvise20"
+        }) : false;
 
         const { value: formValues } = await Swal.fire({
             title: 'Sửa thông tin người dùng',
@@ -138,6 +142,10 @@ const Users = () => {
                 <div style="text-align: left; margin-bottom: 10px;">
                     <label style="display: block; font-weight: bold;">User Type (Last Element)</label>
                     <input id="swal-input3" class="swal2-input" value="${lastUserType}" placeholder="User Type" style="width: 85%;" disabled>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <input type="checkbox" id="swal-input31" class="swal2-input-checkbox" ${isVoucherExist ? "checked" : ""} style="width: auto; margin-right: 10px;">
+                    <label for="swal-input31" style="font-weight: normal; margin: 0;">Voucher giảm giá 20% khi tư vấn</label>
                 </div>
                 <div style="text-align: left; margin-bottom: 10px;">
                     <label style="display: block; font-weight: bold;">Thẻ thành viên:</label>
@@ -163,9 +171,11 @@ const Users = () => {
                 const startDateMember = Swal.getPopup().querySelector('#swal-input5')?.value;
                 const endDateMember = Swal.getPopup().querySelector('#swal-input6')?.value;
 
+                const voucher = Swal.getPopup().querySelector('#swal-input31').checked;
+
                 const startTimestamp = Timestamp.fromDate(new Date(startDateMember));
                 const endTimestamp = Timestamp.fromDate(new Date(endDateMember));
-                
+
                 if (!memberActive && (startDateMember || endDateMember)) {
                     Swal.fire('error', 'Nếu bạn không kích hoạt thẻ thành viên, hãy xóa ngày bắt đầu và ngày kết thúc', 'error');
                     return false;
@@ -178,7 +188,7 @@ const Users = () => {
                     Swal.fire('error', 'Ngày bắt đầu không được lớn hơn ngày kết thúc', 'error');
                     return false;
                 }
-                return { photoURL, displayName, memberActive, startDateMember: startTimestamp, endDateMember: endTimestamp };
+                return { photoURL, displayName, memberActive, startDateMember: startTimestamp, endDateMember: endTimestamp, voucher };
             }
         });
 
