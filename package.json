@@ -26,6 +26,7 @@
     "react-dom": "^18.3.1",
     "react-google-recaptcha": "^3.1.0",
     "react-router-dom": "^7.1.2",
+    "react-spinners": "^0.15.0",
     "react-tooltip": "^5.28.0",
     "sweetalert2": "^11.15.10"
   },

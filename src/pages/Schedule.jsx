@@ -3,6 +3,7 @@ import Swal from 'sweetalert2';
 import { db } from "../firebase/config";
 import { collection, getDocs, deleteDoc, doc, Timestamp, updateDoc, addDoc, query, orderBy, limit, startAfter } from 'firebase/firestore';
 import { Trash, Edit, Info, ChevronRight, ChevronLeft, PackagePlus } from 'lucide-react';
+import { ClimbingBoxLoader } from 'react-spinners'
 
 const Schedule = () => {
     const [appointments, setAppointments] = useState([]);
@@ -326,7 +327,7 @@ const Schedule = () => {
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
+            cancelButtonColor: '#000',
             confirmButtonText: 'Xóa',
         }).then(async (result) => {
             if (result.isConfirmed) {
@@ -357,7 +358,16 @@ const Schedule = () => {
     };
 
     if (loading) {
-        return <div className="loading">Đang tải...</div>;
+        return (
+            <div style={styles.loading}>
+                <ClimbingBoxLoader
+                    color="#87bc9d"
+                    loading
+                    size={30}
+                    speedMultiplier={0.5}
+                />
+            </div>
+        )
     }
 
     return (
@@ -593,9 +603,11 @@ const styles = {
         fontSize: '18px',
     },
     loading: {
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
         textAlign: 'center',
-        padding: '60px',
-        fontSize: '20px',
-        color: '#777',
-    },
+        marginTop: "50px"
+    }
 };

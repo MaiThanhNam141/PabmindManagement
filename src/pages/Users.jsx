@@ -3,6 +3,7 @@ import Swal from 'sweetalert2';
 import { db } from "../firebase/config";
 import { collection, getDocs, deleteDoc, doc, updateDoc, query, orderBy, limit, startAfter, Timestamp } from 'firebase/firestore';
 import { Edit, Trash, ChevronRight, ChevronLeft } from 'lucide-react';
+import { ClimbingBoxLoader } from 'react-spinners'
 
 const Users = () => {
     const [users, setUsers] = useState([]);
@@ -229,7 +230,16 @@ const Users = () => {
     };
 
     if (loading) {
-        return <div style={styles.loading}>Loading...</div>;
+        return (
+            <div style={styles.loading}>
+                <ClimbingBoxLoader
+                    color="#87bc9d"
+                    loading
+                    size={30}
+                    speedMultiplier={0.5}
+                />
+            </div>
+        )
     }
 
     return (
@@ -451,9 +461,11 @@ const styles = {
         fontSize: '18px',
     },
     loading: {
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
         textAlign: 'center',
-        padding: '60px',
-        fontSize: '20px',
-        color: '#777',
-    },
+        marginTop: "50px"
+    }
 };

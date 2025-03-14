@@ -3,6 +3,7 @@ import Swal from 'sweetalert2';
 import { db, storage } from "../firebase/config";
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { collection, addDoc, getDoc, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { ClimbingBoxLoader } from 'react-spinners'
 
 const Blog = () => {
   const [title, setTitle] = useState('');
@@ -10,6 +11,7 @@ const Blog = () => {
   const [fileUpload, setFileUpload] = useState(null);
   const [isSending, setIsSending] = useState(false);
   const [blogs, setBlogs] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchBlogs();
@@ -17,13 +19,19 @@ const Blog = () => {
 
   // Lấy dữ liệu blog từ Firestore
   const fetchBlogs = async () => {
-    const querySnapshot = await getDocs(collection(db, 'SliderImages'));
-    const blogsData = querySnapshot.docs.map((docSnap, index) => ({
-      id: docSnap.id,
-      index: index + 1,
-      ...docSnap.data()
-    }));
-    setBlogs(blogsData);
+    try {
+      const querySnapshot = await getDocs(collection(db, 'SliderImages'));
+      const blogsData = querySnapshot.docs.map((docSnap, index) => ({
+        id: docSnap.id,
+        index: index + 1,
+        ...docSnap.data()
+      }));
+      setBlogs(blogsData);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Xử lý file upload (chỉ chấp nhận PNG, JPG)
@@ -129,6 +137,19 @@ const Blog = () => {
       Swal.fire('Lỗi', 'Không thể xóa bài viết', 'error');
     }
   };
+
+  if (loading) {
+    return (
+      <div style={styles.loading}>
+        <ClimbingBoxLoader
+          color="#87bc9d"
+          loading
+          size={30}
+          speedMultiplier={0.5}
+        />
+      </div>
+    )
+  }
 
   return (
     <div style={styles.container}>
@@ -328,5 +349,13 @@ const styles = {
     color: '#fff',
     cursor: 'pointer',
     transition: 'background-color 0.3s'
+  },
+  loading: {
+    display: 'flex',
+    flexDirection: 'column', 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    textAlign: 'center',
+    marginTop: "50px"
   }
 };
