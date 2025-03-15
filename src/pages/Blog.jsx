@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import { db, storage } from "../firebase/config";
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
 import { collection, addDoc, getDoc, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { ClimbingBoxLoader } from 'react-spinners'
+import ImageCropper from '../component/ImageCropper';
 
 const Blog = () => {
   const [title, setTitle] = useState('');
@@ -12,6 +13,9 @@ const Blog = () => {
   const [isSending, setIsSending] = useState(false);
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [cropSrc, setCropSrc] = useState('');
+  const [croppedImage, setCroppedImage] = useState(null);
+  const [showCropper, setShowCropper] = useState(false);
 
   useEffect(() => {
     fetchBlogs();
@@ -38,12 +42,16 @@ const Blog = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file && ['image/png', 'image/jpeg'].includes(file.type)) {
-      setFileUpload(file);
+      setFileUpload(file); // Lưu lại file gốc nếu cần dùng
+      const imageUrl = URL.createObjectURL(file);
+      setCropSrc(imageUrl);
+      setShowCropper(true);
     } else {
       Swal.fire('Lỗi', 'Chỉ hỗ trợ file PNG, JPG', 'error');
-      e.target.value = null; // reset file input
+      e.target.value = null;
     }
   };
+
 
   // Xử lý thêm blog mới
   const handleSubmitPost = async () => {
@@ -51,7 +59,6 @@ const Blog = () => {
       Swal.fire('Lỗi', 'Vui lòng nhập đầy đủ thông tin', 'error');
       return;
     }
-
     if (blogs.length >= 5) {
       Swal.fire('Lỗi', 'Chỉ có thể lưu tối đa 5 bài blog, hãy xóa bớt!', 'error');
       return;
@@ -69,13 +76,11 @@ const Blog = () => {
 
     try {
       setIsSending(true);
-      // Tạo tên file với 5 ký tự số ngẫu nhiên
-      const randomNumber = Math.floor(10000 + Math.random() * 90000);
-      const fileExt = fileUpload.name.split('.').pop();
-      const fileName = `${randomNumber}.${fileExt}`;
-
+      const fileName = `${Date.now()}.jpg`;
       const storagePath = `Blog/${fileName}`;
       const storageRef = ref(storage, storagePath);
+
+      // Upload ảnh đã cắt
       await uploadBytes(storageRef, fileUpload);
       const downloadURL = await getDownloadURL(storageRef);
 
@@ -85,12 +90,16 @@ const Blog = () => {
         urlImages: downloadURL,
         storagePath,
       });
+
       Swal.fire('Thành công', 'Bài viết đã được thêm!', 'success');
-      setBlogs(prev => [...prev, { id: randomNumber, title, link: shareLink, urlImages: downloadURL, storagePath }])
+      setBlogs(prev => [...prev, { id: Date.now(), title, link: shareLink, urlImages: downloadURL, storagePath }]);
 
       setTitle('');
       setShareLink('');
       setFileUpload(null);
+
+      setCroppedImage(null);
+      setCropSrc('');
     } catch (error) {
       console.error(error);
       Swal.fire('Lỗi', 'Có lỗi xảy ra, vui lòng thử lại!', 'error');
@@ -98,6 +107,7 @@ const Blog = () => {
       setIsSending(false);
     }
   };
+
 
   // Xử lý xóa blog
   const handleDelete = async (id) => {
@@ -115,20 +125,24 @@ const Blog = () => {
       // Lấy document cần xóa để biết storagePath
       const docRef = doc(db, 'SliderImages', id);
       const docSnap = await getDoc(docRef);
+      console.log("docSnap", docSnap)
       if (docSnap.exists()) {
         const data = docSnap.data();
-        const storagePath = await data.storagePath; // đường dẫn file đã lưu
+        const storagePath = await data.storagePath;
+        console.log(storagePath)
         if (storagePath) {
           // Xóa file trong Storage
           const fileRef = ref(storage, storagePath);
-          await deleteObject(fileRef);
+          console.log("fileRef: ", fileRef)
+          Promise.all([
+            await deleteObject(fileRef),
+            await deleteDoc(docRef),
+          ])
+          Swal.fire('Đã xóa!', 'Bài viết đã được xóa thành công', 'success');
         } else {
           Swal.fire('Lỗi', 'Không tìm thấy địa chỉ hình ảnh cần xóa', 'error');
         }
-        // Sau đó xóa document trong Firestore
-        await deleteDoc(docRef);
         setBlogs(prev => prev.filter(item => item.id !== id));
-        Swal.fire('Đã xóa!', 'Bài viết đã được xóa thành công', 'success');
       } else {
         Swal.fire('Lỗi', 'Không tìm thấy dữ liệu cần xóa', 'error');
       }
@@ -184,6 +198,30 @@ const Blog = () => {
             onChange={handleFileChange}
           />
         </div>
+        {showCropper && cropSrc && (
+          <div style={{ marginBottom: '1rem' }}>
+            <ImageCropper
+              src={cropSrc}
+              onComplete={(blob) => {
+                setCroppedImage(blob);
+                setShowCropper(false);
+              }}
+              onCancel={() => setShowCropper(false)}
+            />
+          </div>
+        )}
+
+        {/* Review ảnh đã cắt */}
+        {croppedImage && (
+          <div style={{ marginBottom: '1rem' }}>
+            <h3>Hình ảnh đã cắt:</h3>
+            <img
+              src={URL.createObjectURL(croppedImage)}
+              alt="Cropped"
+              style={{ maxWidth: '100%' }}
+            />
+          </div>
+        )}
         <button
           style={isSending ? styles.disabledButton : styles.button}
           onClick={handleSubmitPost}
@@ -229,7 +267,7 @@ const Blog = () => {
           </tbody>
         </table>
       </div>
-    </div>
+    </div >
   );
 };
 
@@ -322,12 +360,11 @@ const styles = {
   tableTr: {
     backgroundColor: '#fff'
   },
-  // Đổi màu cho cột index (đảm bảo không trùng với nền)
   indexTd: {
     border: '1px solid #ecf0f1',
     padding: '0.75rem',
     textAlign: 'center',
-    color: '#2c3e50', // màu chữ tối
+    color: '#2c3e50', 
     fontWeight: 'bold'
   },
   link: {
@@ -352,10 +389,10 @@ const styles = {
   },
   loading: {
     display: 'flex',
-    flexDirection: 'column', 
-    justifyContent: 'center', 
+    flexDirection: 'column',
+    justifyContent: 'center',
     alignItems: 'center',
     textAlign: 'center',
     marginTop: "50px"
-  }
+  },
 };
