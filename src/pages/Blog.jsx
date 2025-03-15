@@ -42,7 +42,7 @@ const Blog = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file && ['image/png', 'image/jpeg'].includes(file.type)) {
-      setFileUpload(file); // Lưu lại file gốc nếu cần dùng
+      setFileUpload(file);
       const imageUrl = URL.createObjectURL(file);
       setCropSrc(imageUrl);
       setShowCropper(true);
@@ -80,19 +80,24 @@ const Blog = () => {
       const storagePath = `Blog/${fileName}`;
       const storageRef = ref(storage, storagePath);
 
-      // Upload ảnh đã cắt
-      await uploadBytes(storageRef, fileUpload);
+      await uploadBytes(storageRef, croppedImage || fileUpload);
       const downloadURL = await getDownloadURL(storageRef);
 
-      await addDoc(collection(db, 'SliderImages'), {
+      const newBlog = {
         title,
         link: shareLink,
         urlImages: downloadURL,
         storagePath,
-      });
+      };
+
+      const docRef = await addDoc(collection(db, 'SliderImages'), newBlog);
 
       Swal.fire('Thành công', 'Bài viết đã được thêm!', 'success');
-      setBlogs(prev => [...prev, { id: Date.now(), title, link: shareLink, urlImages: downloadURL, storagePath }]);
+
+      setBlogs(prev => [
+        ...prev,
+        { ...newBlog, id: docRef.id, index: prev.length + 1 }
+      ]);
 
       setTitle('');
       setShareLink('');
@@ -125,15 +130,12 @@ const Blog = () => {
       // Lấy document cần xóa để biết storagePath
       const docRef = doc(db, 'SliderImages', id);
       const docSnap = await getDoc(docRef);
-      console.log("docSnap", docSnap)
       if (docSnap.exists()) {
         const data = docSnap.data();
         const storagePath = await data.storagePath;
-        console.log(storagePath)
         if (storagePath) {
           // Xóa file trong Storage
           const fileRef = ref(storage, storagePath);
-          console.log("fileRef: ", fileRef)
           Promise.all([
             await deleteObject(fileRef),
             await deleteDoc(docRef),
@@ -364,7 +366,7 @@ const styles = {
     border: '1px solid #ecf0f1',
     padding: '0.75rem',
     textAlign: 'center',
-    color: '#2c3e50', 
+    color: '#2c3e50',
     fontWeight: 'bold'
   },
   link: {
