@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
+import { motion, AnimatePresence } from 'framer-motion';
 import { db, storage } from "../firebase/config";
 import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
 import { collection, addDoc, getDoc, getDocs, deleteDoc, doc } from 'firebase/firestore';
@@ -125,7 +126,8 @@ const Blog = () => {
     });
 
     if (!result.isConfirmed) return;
-
+    setBlogs(prev => prev.filter(item => item.id !== id));
+    return;
     try {
       // Lấy document cần xóa để biết storagePath
       const docRef = doc(db, 'SliderImages', id);
@@ -168,7 +170,7 @@ const Blog = () => {
   }
 
   return (
-    <div style={styles.container}>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
       <h2 style={styles.header}>Quản lý Blog</h2>
       <div style={styles.form}>
         <div style={styles.inputGroup}>
@@ -201,7 +203,7 @@ const Blog = () => {
           />
         </div>
         {showCropper && cropSrc && (
-          <div style={{ marginBottom: '1rem' }}>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <ImageCropper
               src={cropSrc}
               onComplete={(blob) => {
@@ -210,7 +212,7 @@ const Blog = () => {
               }}
               onCancel={() => setShowCropper(false)}
             />
-          </div>
+          </motion.div>
         )}
 
         {/* Review ảnh đã cắt */}
@@ -245,31 +247,40 @@ const Blog = () => {
             </tr>
           </thead>
           <tbody>
-            {blogs.map((blog) => (
-              <tr key={blog.id} style={styles.tableTr}>
-                <td style={styles.indexTd}>{blog.index}</td>
-                <td style={styles.tableTd}>
-                  <a href={blog.link} target='_blank' rel='noopener noreferrer' style={styles.link}>
-                    {blog.title}
-                  </a>
-                </td>
-                <td style={styles.tableTd}>
-                  <img src={blog.urlImages} alt={blog.title} style={styles.image} />
-                </td>
-                <td style={styles.tableTd}>
-                  <button
-                    style={{ ...styles.actionButton, backgroundColor: '#e74c3c' }}
-                    onClick={() => handleDelete(blog.id)}
-                  >
-                    Xóa
-                  </button>
-                </td>
-              </tr>
-            ))}
+            <AnimatePresence>
+              {blogs.map((blog) => (
+                <tr key={blog.id} style={styles.tableTr}>
+                  <td style={styles.indexTd}>{blog.index}</td>
+                  <td style={styles.tableTd}>
+                    <a href={blog.link} target='_blank' rel='noopener noreferrer' style={styles.link}>
+                      {blog.title}
+                    </a>
+                  </td>
+                  <td style={styles.tableTd}>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      style={styles.actionButton}
+                      onClick={() => window.open(blog.urlImages, '_blank')}
+                    >
+                      <img src={blog.urlImages} alt={blog.title} style={styles.image} />
+                    </motion.button>
+                  </td>
+                  <td style={styles.tableTd}>
+                    <motion.button
+                      whileHover={{ scale: 1.3 }}
+                      style={{ ...styles.actionButton, backgroundColor: '#e74c3c' }}
+                      onClick={() => handleDelete(blog.id)}
+                    >
+                      Xóa
+                    </motion.button>
+                  </td>
+                </tr>
+              ))}
+            </AnimatePresence>
           </tbody>
         </table>
       </div>
-    </div >
+    </motion.div>
   );
 };
 
@@ -382,12 +393,11 @@ const styles = {
   actionButton: {
     margin: '0 0.3rem',
     padding: '0.5rem 1rem',
-    backgroundColor: '#3498db',
+    backgroundColor: 'transparent',
     border: 'none',
     borderRadius: '4px',
     color: '#fff',
     cursor: 'pointer',
-    transition: 'background-color 0.3s'
   },
   loading: {
     display: 'flex',

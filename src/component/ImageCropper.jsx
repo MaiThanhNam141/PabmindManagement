@@ -1,6 +1,6 @@
-import '../style/Blog.css'
 import React, { useState, useRef, useEffect } from 'react';
 import ReactCrop from 'react-image-crop';
+import { motion } from 'framer-motion';
 
 const ImageCropper = ({ src, onComplete, onCancel }) => {
   const [crop, setCrop] = useState({ aspect: 390 / 200 });
@@ -8,36 +8,32 @@ const ImageCropper = ({ src, onComplete, onCancel }) => {
   const imageRef = useRef(null);
   const previewCanvasRef = useRef(null);
 
-  // Xử lý khi ảnh được load
   const onImageLoad = (e) => {
     imageRef.current = e.currentTarget;
   };
 
-  // Cập nhật canvas preview khi crop thay đổi
   useEffect(() => {
     if (!completedCrop || !previewCanvasRef.current || !imageRef.current) return;
     const image = imageRef.current;
     const canvas = previewCanvasRef.current;
-    const crop = completedCrop;
     const scaleX = image.naturalWidth / image.width;
     const scaleY = image.naturalHeight / image.height;
     const ctx = canvas.getContext('2d');
-    canvas.width = crop.width;
-    canvas.height = crop.height;
+    canvas.width = completedCrop.width;
+    canvas.height = completedCrop.height;
     ctx.drawImage(
       image,
-      crop.x * scaleX,
-      crop.y * scaleY,
-      crop.width * scaleX,
-      crop.height * scaleY,
+      completedCrop.x * scaleX,
+      completedCrop.y * scaleY,
+      completedCrop.width * scaleX,
+      completedCrop.height * scaleY,
       0,
       0,
-      crop.width,
-      crop.height
+      completedCrop.width,
+      completedCrop.height
     );
-  }, [completedCrop, crop]);
+  }, [completedCrop]);
 
-  // Xử lý xác nhận crop, chuyển canvas thành blob
   const handleConfirm = () => {
     if (!completedCrop || !previewCanvasRef.current) return;
     previewCanvasRef.current.toBlob((blob) => {
@@ -51,18 +47,22 @@ const ImageCropper = ({ src, onComplete, onCancel }) => {
   };
 
   return (
-    <div>
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3 }}
+    >
       <ReactCrop
         crop={crop}
         onChange={(newCrop) => setCrop(newCrop)}
         onComplete={(c) => setCompletedCrop(c)}
-        aspect={390/200}
+        aspect={390 / 200}
       >
-        <img 
-          src={src} 
-          alt="Crop me" 
-          onLoad={onImageLoad} 
-          style={{ maxWidth: '100%', maxHeight: '80vh' }} 
+        <img
+          src={src}
+          alt="Crop me"
+          onLoad={onImageLoad}
+          style={{ maxWidth: '100%', maxHeight: '80vh' }}
         />
       </ReactCrop>
       <div style={{ marginTop: '1rem' }}>
@@ -76,13 +76,41 @@ const ImageCropper = ({ src, onComplete, onCancel }) => {
           }}
         />
       </div>
-      <div style={{ marginTop: '1rem' }}>
-        <button onClick={handleConfirm} style={{ marginRight: '1rem' }}>
+      <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem' }}>
+        <motion.button
+          onClick={handleConfirm}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          style={{
+            padding: '0.5rem 1rem',
+            backgroundColor: '#007bff',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontSize: '1rem'
+          }}
+        >
           Xác nhận
-        </button>
-        <button onClick={onCancel}>Hủy</button>
+        </motion.button>
+        <motion.button
+          onClick={onCancel}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          style={{
+            padding: '0.5rem 1rem',
+            backgroundColor: '#dc3545',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontSize: '1rem'
+          }}
+        >
+          Hủy
+        </motion.button>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
