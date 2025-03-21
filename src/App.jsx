@@ -9,6 +9,7 @@ import FCM from './pages/FCM.jsx';
 import Schedule from './pages/Schedule.jsx';
 import Blog from './pages/Blog.jsx';
 import ChangePassword from './component/ChangePassword.jsx';
+import Welcome from './pages/Welcome.jsx';
 
 import { AuthContext } from './context/AuthContext.jsx';
 
@@ -24,7 +25,7 @@ function App() {
       <Routes>
         <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>}>
           {/* Default Route */}
-          <Route index element={<Statistics />} />
+          <Route index element={<Welcome />} />
           {/* Nested Routes */}
           <Route path="statistics" element={<Statistics />} />
           <Route path="blogs" element={<Blog />} />

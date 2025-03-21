@@ -1,129 +1,104 @@
-import { useContext } from "react";
-import { AuthContext } from "../context/AuthContext";
+import React, { useEffect, useState } from "react";
+import { getAnalytics, logEvent, setUserId, setUserProperties } from "firebase/analytics";
+import { motion } from "framer-motion";
+import Swal from "sweetalert2";
 
 const Statistics = () => {
-    const { currentUser } = useContext(AuthContext);
-    
-    // Extract the username from the email
-    const username = currentUser.email.split("@")[0];
-    
-    // Get the current time
-    const currentHour = new Date().getHours();
-    let greeting;
-    
-    if (currentHour < 12) {
-        greeting = "Good morning";
-    } else if (currentHour < 18) {
-        greeting = "Good afternoon";
-    } else {
-        greeting = "Good evening";
-    }
-    
+    const [visitorData, setVisitorData] = useState(null);
+    const [visitCount, setVisitCount] = useState(0);
+    const [pageViews, setPageViews] = useState(0);
+    const [loadTime, setLoadTime] = useState(0);
+    const [deviceInfo, setDeviceInfo] = useState("");
+
+    useEffect(() => {
+        fetchVisitorData();
+        trackPerformance();
+        trackDeviceInfo();
+    }, []);
+
+    const fetchVisitorData = async () => {
+        try {
+            const analytics = getAnalytics();
+            const userId = `user_${Math.floor(Math.random() * 100000)}`;
+            setUserId(analytics, userId);
+            setUserProperties(analytics, { role: "guest" });
+            logEvent(analytics, "page_view");
+            setVisitorData({ userId, role: "guest" });
+
+            const storedVisitCount = localStorage.getItem("visitCount") || 0;
+            const updatedVisitCount = parseInt(storedVisitCount) + 1;
+            localStorage.setItem("visitCount", updatedVisitCount);
+            setVisitCount(updatedVisitCount);
+        } catch (error) {
+            console.error("Lỗi lấy dữ liệu khách truy cập:", error);
+        }
+    };
+
+    const trackPerformance = () => {
+        const startTime = performance.timing.navigationStart;
+        const endTime = performance.timing.loadEventEnd;
+        const loadDuration = (endTime - startTime) / 1000; // Convert to seconds
+        setLoadTime(loadDuration);
+    };
+
+    const trackDeviceInfo = () => {
+        const userAgent = navigator.userAgent;
+        const isMobile = /Mobi|Android/i.test(userAgent);
+        const browser = userAgent.includes("Chrome") ? "Chrome" : userAgent.includes("Firefox") ? "Firefox" : "Other";
+        setDeviceInfo(`${isMobile ? "📱 Mobile" : "💻 Desktop"} - 🌍 ${browser}`);
+    };
+
     return (
-        <div style={styles.container}>
-            <div style={styles.card}>
-                <div style={styles.header}>
-                    <div style={styles.avatar}>{username[0].toUpperCase()}</div>
-                    <div style={styles.greeting}>
-                        <h1 style={styles.title}>{greeting}, {username}!</h1>
-                        <p style={styles.subtitle}>Welcome back to your dashboard</p>
-                    </div>
-                </div>
-                <div style={styles.content}>
-                    <p style={styles.text}>We're glad to see you again. Here's a quick overview of your account:</p>
-                    <ul style={styles.list}>
-                        <li style={styles.listItem}>• Last login: {new Date().toLocaleString()}</li>
-                        <li style={styles.listItem}>• Email: {currentUser.email}</li>
-                        <li style={styles.listItem}>• Role: {currentUser.role || "Admin"}</li>
-                    </ul>
-                    <div style={styles.gifContainer}>
-                        <img 
-                            src="https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif" 
-                            alt="Welcome Gif" 
-                            style={styles.gif}
-                        />
-                    </div>
-                </div>
+        <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            style={styles.container}
+        >
+            <h2 style={styles.title}>📊 Thống Kê Người Dùng</h2>
+            <div style={styles.dataBox}>
+                <h3>🔍 Người đang truy cập</h3>
+                <p>{visitorData ? `ID: ${visitorData.userId}, Role: ${visitorData.role}` : "Đang tải..."}</p>
             </div>
-        </div>
+            <div style={styles.dataBox}>
+                <h3>📈 Thống Kê Lượt Truy Cập</h3>
+                <p>🔢 Số lần truy cập: {visitCount}</p>
+                <p>📄 Số trang đã xem: {pageViews}</p>
+            </div>
+            <div style={styles.dataBox}>
+                <h3>⚡ Hiệu Suất Trang Web</h3>
+                <p>⏳ Thời gian tải trung bình: {loadTime} giây</p>
+            </div>
+            <div style={styles.dataBox}>
+                <h3>🖥️ Thiết Bị & Trình Duyệt</h3>
+                <p>{deviceInfo}</p>
+            </div>
+        </motion.div>
     );
 };
 
 const styles = {
     container: {
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        height: "100%",
-        minHeight: "100vh",
-        backgroundColor: "#f0f4f8",
-    },
-    card: {
-        backgroundColor: "white",
-        borderRadius: "8px",
-        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-        padding: "20px",
-        width: "100%",
-        maxWidth: "500px",
-    },
-    header: {
-        display: "flex",
-        alignItems: "center",
-        marginBottom: "20px",
-    },
-    avatar: {
-        width: "60px",
-        height: "60px",
-        borderRadius: "50%",
-        backgroundColor: "#4a90e2",
-        color: "white",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        fontSize: "24px",
-        marginRight: "20px",
-    },
-    greeting: {
-        flex: 1,
+        width: "60%",
+        margin: "50px auto",
+        padding: "50px",
+        borderRadius: "10px",
+        boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
+        backgroundColor: "#fff",
+        textAlign: "center",
     },
     title: {
         fontSize: "24px",
-        margin: "0 0 5px 0",
-        color: "#333",
+        fontWeight: "bold",
+        marginBottom: "30px",
     },
-    subtitle: {
-        fontSize: "14px",
-        margin: 0,
-        color: "#666",
-    },
-    content: {
-        borderTop: "1px solid #eee",
-        paddingTop: "20px",
-    },
-    text: {
-        fontSize: "16px",
-        color: "#333",
-        marginBottom: "15px",
-    },
-    list: {
-        listStyleType: "none",
-        padding: 0,
-        margin: 0,
-    },
-    listItem: {
-        fontSize: "14px",
-        color: "#666",
-        marginBottom: "10px",
-    },
-    gifContainer: {
-        display: "flex",
-        justifyContent: "center",
-        marginTop: "20px",
-    },
-    gif: {
-        width: "100%",
-        maxWidth: "300px",
+    dataBox: {
+        padding: "20px",
+        margin: "15px 0",
+        border: "1px solid #007bff",
         borderRadius: "8px",
+        backgroundColor: "#f8f9fa",
+        boxShadow: "0px 2px 5px rgba(0, 0, 0, 0.1)",
     },
 };
 
