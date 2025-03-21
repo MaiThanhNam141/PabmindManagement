@@ -5,6 +5,7 @@ import Logo from "../assets/logo.png";
 import Sidebar from '../component/Sidebar';
 import { auth } from "../firebase/config"
 import { signOut } from '@firebase/auth';
+import { motion } from "framer-motion";
 import '../style/Login.css'
 
 const Dashboard = () => {
@@ -22,12 +23,12 @@ const Dashboard = () => {
   };
 
   return (
-    <div style={{ display: 'flex', backgroundColor: '#f7f7f7', color: '#F9FAFB', overflow: 'hidden', paddingTop:'2px' }}>
+    <div style={{ display: 'flex', backgroundColor: '#f7f7f7', color: '#F9FAFB', overflow: 'hidden', paddingTop: '2px' }}>
       {/* Sidebar */}
       <Sidebar />
 
       {/* Main Content */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginLeft:'3px' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginLeft: '3px' }}>
         {/* Navbar */}
         <div style={{ width: '100%', backgroundColor: '#DEFFD3', color: '#3E3E3E', height: '4rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 1rem', borderRadius: 5 }}>
           <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -40,7 +41,18 @@ const Dashboard = () => {
           <div style={{ display: 'flex', alignItems: 'center' }}>
             {currentUser && (
               <>
-                <span>{currentUser.email}</span>
+                <Link to={'/password'} style={{ textDecoration: 'none', cursor: 'pointer' }}>
+                  <motion.span
+                    style={{ marginLeft: '10px', whiteSpace: 'nowrap', color: '#000', fontSize: 15, fontWeight: '300', textDecoration: 'none' }}
+                    initial={{ opacity: 0, width: 0 }}
+                    animate={{ opacity: 1, width: 'auto' }}
+                    exit={{ opacity: 0, width: 0 }}
+                    transition={{ duration: 0.2, delay: 0.3 }}
+                  >
+                    {currentUser.email}
+                  </motion.span>
+                </Link>
+                {/* <span>{currentUser.email}</span> */}
                 <button
                   onClick={handleLogout}
                   className="btn"
@@ -60,5 +72,5 @@ const Dashboard = () => {
     </div>
   );
 };
-  
+
 export default Dashboard;

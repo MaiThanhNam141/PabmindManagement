@@ -8,6 +8,7 @@ import NotFound from './pages/NotFound.jsx';
 import FCM from './pages/FCM.jsx';
 import Schedule from './pages/Schedule.jsx';
 import Blog from './pages/Blog.jsx';
+import ChangePassword from './component/ChangePassword.jsx';
 
 import { AuthContext } from './context/AuthContext.jsx';
 
@@ -30,6 +31,7 @@ function App() {
           <Route path="schedule" element={<Schedule />} />
           <Route path="users" element={<Users />} />
           <Route path="fcm" element={<FCM />} />
+          <Route path="password" element={<ChangePassword />} />
         </Route>
         <Route path="login" element={<Login />} />
         <Route path="*" element={<NotFound />} />
