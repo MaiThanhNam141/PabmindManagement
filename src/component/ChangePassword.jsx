@@ -1,5 +1,5 @@
 import React, { useState, useContext } from "react";
-import { reauthenticateWithCredential, updatePassword, EmailAuthProvider, signOut } from "firebase/auth";
+import { reauthenticateWithCredential, updatePassword, EmailAuthProvider, signOut } from "@firebase/auth";
 import { motion } from "framer-motion";
 import Swal from "sweetalert2";
 import { auth } from "../firebase/config";

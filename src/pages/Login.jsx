@@ -2,7 +2,7 @@ import React, { useState, useContext } from 'react';
 import Logo from "../assets/logo.png";
 import { auth } from "../firebase/config"
 import Swal from 'sweetalert2';
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword } from "@firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from '../context/AuthContext';
 import loadingGif from '../assets/loading.gif';
@@ -208,12 +208,13 @@ const Login = () => {
                                     )}
                                 </button>
                             </div>
-                            <div style={{ textAlign: 'center', marginBottom: '15px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '15px' }}>
                                 <ReCAPTCHA
                                     sitekey={import.meta.env.VITE_GOOGLE_CAPTCHA}
                                     onChange={setCaptchaValue}
                                 />
                             </div>
+
                         </div>
 
                         <div>

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import { db } from "../firebase/config";
-import { collection, getDocs, deleteDoc, doc, Timestamp, updateDoc, addDoc, query, orderBy, limit, startAfter } from 'firebase/firestore';
+import { collection, getDocs, deleteDoc, doc, Timestamp, updateDoc, addDoc, query, orderBy, limit, startAfter } from '@firebase/firestore';
 import { Trash, Edit, Info, ChevronRight, ChevronLeft, PackagePlus } from 'lucide-react';
 import { ClimbingBoxLoader } from 'react-spinners'
 import { useLocation, useNavigate } from 'react-router-dom';
+import { styles } from '../style/pagination';
 
 const Schedule = () => {
     const [appointments, setAppointments] = useState([]);
@@ -490,139 +491,3 @@ const Schedule = () => {
 };
 
 export default Schedule;
-
-const styles = {
-    container: {
-        maxWidth: '1200px',
-        margin: '40px auto',
-        padding: '30px',
-        fontFamily: "'Roboto', sans-serif",
-        backgroundColor: '#fff',
-        borderRadius: '12px',
-        boxShadow: '0 8px 16px rgba(0,0,0,0.1)',
-    },
-    header: {
-        textAlign: 'center',
-        marginBottom: '30px',
-        color: '#333',
-        fontSize: '28px',
-        fontWeight: '600',
-    },
-    subHeader: {
-        textAlign: 'left',
-        marginBottom: '20px',
-        color: '#555',
-        fontSize: '18px',
-    },
-    addButton: {
-        marginTop: '10px',
-        marginBottom: '20px',
-        padding: '8px 16px',
-        borderColor: '#4CAF50',
-        color: 'black',
-        backgroundColor: '#f7f7f7',
-        border: '10',
-        borderRadius: '4px',
-        cursor: 'pointer',
-        alignItems: 'center',
-        justifyContent: 'center'
-    },
-    searchContainer: {
-        width: '100%',
-        display: 'flex',
-        justifyContent: 'center',
-        marginBottom: '25px',
-    },
-    searchInput: {
-        width: '100%',
-        maxWidth: '400px',
-        padding: '12px 20px',
-        borderRadius: '30px',
-        border: '1px solid #ddd',
-        outline: 'none',
-        fontSize: '16px',
-        transition: 'border 0.3s',
-    },
-    tableContainer: {
-        overflowX: 'auto',
-        marginBottom: '30px',
-    },
-    table: {
-        width: '100%',
-        borderCollapse: 'collapse',
-    },
-    tableRow: {
-        textAlign: 'center',
-        padding: '15px 0',
-    },
-    th: {
-        padding: '15px 10px',
-        backgroundColor: '#f9f9f9',
-        fontWeight: '600',
-        color: '#333',
-        borderBottom: '2px solid #eee',
-    },
-    td: {
-        padding: '15px 10px',
-        color: '#555',
-        borderBottom: '1px solid #eee',
-    },
-    avatar: {
-        width: '45px',
-        height: '45px',
-        borderRadius: '50%',
-        objectFit: 'cover',
-    },
-    actionContainer: {
-        display: 'flex',
-        justifyContent: 'center',
-        gap: '12px',
-    },
-    actionButton: {
-        backgroundColor: 'transparent',
-        border: 'none',
-        cursor: 'pointer',
-    },
-    pagination: {
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: '20px',
-        marginTop: '20px',
-    },
-    paginationButton: {
-        backgroundColor: '#4CAF50',
-        border: 'none',
-        padding: '12px',
-        borderRadius: '50%',
-        cursor: 'pointer',
-        color: '#fff',
-        transition: 'background-color 0.3s',
-        minWidth: '50px',
-        minHeight: '50px',
-    },
-    pageNumbers: {
-        display: 'flex',
-        gap: '10px',
-    },
-    pageNumber: {
-        padding: '10px 15px',
-        borderRadius: '5px',
-        cursor: 'pointer',
-        transition: 'background-color 0.3s, transform 0.3s',
-    },
-    noData: {
-        textAlign: 'center',
-        padding: '25px',
-        color: '#999',
-        fontSize: '18px',
-    },
-    loading: {
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        textAlign: 'center',
-        marginTop: "50px"
-    }
-};
