@@ -1,16 +1,25 @@
-import React, { useState } from "react";
-import { getAuth, reauthenticateWithCredential, updatePassword, EmailAuthProvider } from "firebase/auth";
+import React, { useState, useContext } from "react";
+import { reauthenticateWithCredential, updatePassword, EmailAuthProvider, signOut } from "firebase/auth";
 import { motion } from "framer-motion";
 import Swal from "sweetalert2";
+import { auth } from "../firebase/config";
+import { AuthContext } from "../context/AuthContext";
 
 const ChangePassword = () => {
-	const auth = getAuth();
-	const user = auth.currentUser;
-
 	const [oldPassword, setOldPassword] = useState("");
 	const [newPassword, setNewPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
 
+	const { currentUser, dispatch } = useContext(AuthContext);
+
+	const handleLogout = async () => {
+		try {
+			await signOut(auth);
+			dispatch({ type: "LOGOUT" });
+		} catch (error) {
+			console.error(error);
+		}
+	};
 	// 🔐 Hàm kiểm tra mật khẩu mạnh
 	const isStrongPassword = (password) => {
 		const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{10,}$/;
@@ -20,13 +29,29 @@ const ChangePassword = () => {
 	const handleChangePassword = async (e) => {
 		e.preventDefault();
 
-		if (!user) {
+		Swal.fire({
+			title: "Đang xử lý...",
+			text: "Vui lòng đợi trong giây lát!",
+			allowOutsideClick: false,
+			allowEscapeKey: false,
+			showConfirmButton: false,
+			willOpen: () => {
+				Swal.showLoading();
+			},
+		});
+
+		if (!currentUser) {
 			Swal.fire("Lỗi!", "Bạn chưa đăng nhập!", "error");
 			return;
 		}
 
 		if (newPassword !== confirmPassword) {
 			Swal.fire("Lỗi!", "Mật khẩu mới và xác nhận mật khẩu không khớp!", "error");
+			return;
+		}
+
+		if (newPassword === oldPassword) {
+			Swal.fire("Lỗi!", "Mật khẩu mới phải khác mật khẩu cũ!", "error");
 			return;
 		}
 
@@ -40,9 +65,9 @@ const ChangePassword = () => {
 		}
 
 		try {
-			const credential = EmailAuthProvider.credential(user.email, oldPassword);
-			await reauthenticateWithCredential(user, credential);
-			await updatePassword(user, newPassword);
+			const credential = EmailAuthProvider.credential(currentUser.email, oldPassword);
+			await reauthenticateWithCredential(currentUser, credential);
+			await updatePassword(currentUser, newPassword);
 
 			Swal.fire({
 				icon: "success",
@@ -50,10 +75,10 @@ const ChangePassword = () => {
 				text: "🎉 Đổi mật khẩu thành công!",
 			});
 
-			// Reset fields
 			setOldPassword("");
 			setNewPassword("");
 			setConfirmPassword("");
+			handleLogout();
 		} catch (error) {
 			Swal.fire("Lỗi!", error.message, "error");
 		}
@@ -117,7 +142,6 @@ const ChangePassword = () => {
 	);
 };
 
-// 🎨 STYLE CSS-IN-JS
 const styles = {
 	container: {
 		width: "60%",

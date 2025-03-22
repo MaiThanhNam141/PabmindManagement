@@ -16,9 +16,8 @@ const Dashboard = () => {
     try {
       await signOut(auth);
       dispatch({ type: "LOGOUT" });
-      console.log("Done");
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
   };
 

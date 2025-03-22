@@ -4,15 +4,31 @@ import { db } from "../firebase/config";
 import { collection, getDocs, deleteDoc, doc, updateDoc, query, orderBy, limit, startAfter, Timestamp } from 'firebase/firestore';
 import { Edit, Trash, ChevronRight, ChevronLeft } from 'lucide-react';
 import { ClimbingBoxLoader } from 'react-spinners'
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const Users = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
-    const [searchTerm, setSearchTerm] = useState('');
     const [lastVisible, setLastVisible] = useState(null);
     const [totalPages, setTotalPages] = useState(0);
-    const itemPerPage = 50;
+
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    const [searchTerm, setSearchTerm] = useState(new URLSearchParams(location.search).get("search") || '');
+
+    const itemPerPage = 100;
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        if (searchTerm) {
+            params.set("search", searchTerm);
+        } else {
+            params.delete("search");
+        }
+        navigate(`?${params.toString()}`, { replace: true });
+    }, [searchTerm, navigate]);
 
     useEffect(() => {
         fetchData();
