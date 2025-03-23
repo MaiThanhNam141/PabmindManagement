@@ -1,0 +1,159 @@
+/* Overlay (Click để đóng Modal) */
+.modal-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: rgba(0, 0, 0, 0.5);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	z-index: 1000;
+}
+
+/* Modal content */
+.modal-content {
+	background: #f4f7fc;
+	color: #333;
+	width: 80%;
+	max-width: 1000px;
+	max-height: 90vh;
+	/* Giới hạn chiều cao */
+	overflow-y: auto;
+	/* Thêm thanh cuộn nếu nội dung quá dài */
+	padding: 30px;
+	border-radius: 12px;
+	position: relative;
+	box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Close button */
+.close-button {
+	position: absolute;
+	top: 15px;
+	right: 20px;
+	background: transparent;
+	border: none;
+	font-size: 20px;
+	color: #888;
+	cursor: pointer;
+}
+
+.close-button:hover {
+	color: #333;
+}
+
+h2 {
+	text-align: center;
+	margin-bottom: 20px;
+	font-size: 22px;
+	color: #2c3e50;
+}
+
+/* Grid layout */
+.form-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+	gap: 20px;
+}
+
+/* Input group */
+.input-group {
+	display: flex;
+	flex-direction: column;
+}
+
+.input-group label {
+	font-size: 14px;
+	font-weight: bold;
+	margin-bottom: 6px;
+	color: #555;
+}
+
+.input-group input,
+.input-group textarea {
+	padding: 10px;
+	font-size: 14px;
+	border-radius: 6px;
+	border: 1px solid #ccc;
+	outline: none;
+	background: #fff;
+	color: #333;
+}
+
+.input-group textarea {
+	resize: vertical;
+	min-height: 80px;
+}
+
+/* Checkbox styling */
+.input-group input[type="checkbox"] {
+	width: 18px;
+	height: 18px;
+	cursor: pointer;
+	margin-top: 5px;
+}
+
+/* Submit button */
+.save-button {
+	width: 100%;
+	margin-top: 20px;
+	padding: 12px;
+	font-size: 16px;
+	font-weight: bold;
+	background: #007bff;
+	color: white;
+	border: none;
+	border-radius: 6px;
+	cursor: pointer;
+	transition: 0.3s;
+}
+
+.save-button:hover {
+	background: #0056b3;
+}
+
+.tag-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.tag {
+    background-color: #e0e0e0;
+    padding: 5px 10px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+}
+
+.remove-tag {
+    margin-left: 6px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    color: red;
+}
+
+.add-tag {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 16px;
+    cursor: pointer;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+	.modal-content {
+		width: 90%;
+	}
+
+	.form-grid {
+		grid-template-columns: 1fr;
+	}
+}
