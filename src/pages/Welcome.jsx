@@ -86,7 +86,7 @@ const Welcome = () => {
                     </div>
                 </div>
             ) : (
-                <p>Loading weather data...</p>
+                <p style={styles.weatherTitle}>Loading weather data...</p>
             )}
         </div>
     );

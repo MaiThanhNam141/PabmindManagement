@@ -13,7 +13,7 @@ const Schedule = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [lastVisible, setLastVisible] = useState(null);
     const [totalPages, setTotalPages] = useState(0);
-    const itemPerPage = 50;
+    const itemPerPage = 100;
 
     const location = useLocation();
     const navigate = useNavigate();
