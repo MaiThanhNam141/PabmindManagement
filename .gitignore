@@ -23,7 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 src/firebase/config.jsx
-
-src/firebase/config.jsx
 .env
 .firebase/hosting.ZGlzdA.cache
+*.cache
+firebase
