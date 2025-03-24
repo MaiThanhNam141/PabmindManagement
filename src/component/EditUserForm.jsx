@@ -104,8 +104,8 @@ const EditUserForm = ({ user, onSave, onClose }) => {
                             <input type="text" name="displayName" value={formData.displayName} onChange={handleChange} />
                         </div>
                         <div className="input-group">
-                            <label>Email</label>
-                            <input type="email" name="email" value={formData.email} onChange={handleChange} />
+                            <label>Email (Không thể sửa)</label>
+                            <input type="email" name="email" value={formData.email} disabled />
                         </div>
                         <div className="input-group">
                             <label>Số điện thoại</label>
@@ -131,7 +131,7 @@ const EditUserForm = ({ user, onSave, onClose }) => {
                         </div>
                         <div className="input-group">
                             <label>Ngày bắt đầu thành viên (Không thể sửa)</label>
-                            <input type="datetime-local" name="startDateMember" value={formData.startDateMember} onChange={handleChange} disabled />
+                            <input type="datetime-local" name="startDateMember" value={formData.startDateMember} disabled />
                         </div>
                         <div className="input-group">
                             <label>Ngày kết thúc thành viên</label>
@@ -186,7 +186,7 @@ const EditUserForm = ({ user, onSave, onClose }) => {
                         {/* Nhóm đánh giá tâm lý */}
                         <div className="input-group">
                             <label>Câu trả lời có vấn đề trong GAD7 (Không thể sửa)</label>
-                            <textarea name="GAD7CriticalPoint" value={formData.GAD7CriticalPoint} onChange={handleChange} rows="3" disabled />
+                            <textarea name="GAD7CriticalPoint" value={formData.GAD7CriticalPoint} rows="3" disabled />
                         </div>
                         <div className="input-group">
                             <label>BDI Rate</label>
