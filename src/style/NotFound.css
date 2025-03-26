@@ -1,100 +1,156 @@
-@import url("https://fonts.googleapis.com/css?family=Dosis:300,400,700,800");
-
+/* Reset chung */
 .denied__wrapper {
-  max-width: 390px;
-  width: 100%;
-  height: 390px;
-  display: block;
-  margin: 0 auto;
-  position: relative;
-  margin-top: 8vh;
+  margin: 0;
+  padding: 0;
+  color: red;
+  font-family: 'Courier New', monospace;
   text-align: center;
-}
-
-.permission_denied h1 {
-  color: #fff;
-  font-family: "Dosis", sans-serif;
-  font-size: 100px;
-  margin-bottom: 0px;
-  font-weight: 800;
-  text-align: center; /* Căn giữa thẻ h1 */
-}
-
-.permission_denied h3 {
-  color: #fff;
-  font-size: 19px;
-  line-height: 23px;
-  max-width: 330px;
-  margin: 0px auto 30px auto;
-  font-family: "Dosis", sans-serif;
-  font-weight: 400;
-}
-
-.permission_denied h3 span {
-  position: relative;
-  display: inline-block;
-  text-decoration: line-through; /* Gạch ngang cho span */
-}
-
-.permission_denied h3 span:after {
-  content: "";
-  border-bottom: 3px solid #ffbb39;
-  position: absolute;
-  left: 0;
-  top: 43%;
+  height: 98vh;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
+  overflow-y: hidden; 
+  overflow-x: hidden;
 }
 
-#astronaut {
-  width: 43px;
+.denied__wrapper::-webkit-scrollbar {
+  display: none;
+}
+
+/* Mã lỗi 404 (Ban đầu) */
+.error-code {
+  font-family: 'Courier New', monospace;
+  font-size: 10rem;
+  font-weight: bold;
+  transition: opacity 1s ease-in-out;
+}
+
+/* Hiển thị con mắt khi count = 0 */
+.eye-image {
+  width: 150px;
+  animation: blink 2s infinite alternate;
+  z-index: 10000;
+}
+
+@keyframes blink {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Hiệu ứng đếm ngược */
+.countdown {
+  font-size: 3rem;
+  margin-top: 10px;
+  animation: flicker 1s infinite alternate;
+}
+
+@keyframes flicker {
+  0% {
+    opacity: 0.9;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+
+  100% {
+    opacity: 0.9;
+  }
+}
+
+/* Nút quay lại */
+.escapeBtn {
+  margin-top: 20px;
+  padding: 10px 25px;
+  background: red;
+  font-size: 1.2rem;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.2s;
+  position: relative;
+  z-index: 10;
+  border-radius: 5px;
+  overflow: hidden;
+  color: black;
+}
+
+.escapeBtn:hover {
+  background: darkred;
+  transform: scale(1.1);
+}
+
+/* Hiệu ứng chảy máu */
+.escapeBtn::after {
+  content: "";
   position: absolute;
-  right: 20px;
-  top: 210px;
-  animation: spinZ 1.5s infinite linear;
+  width: 120%;
+  height: 200%;
+  top: 0;
+  left: -10%;
+  animation: bloodFlow 5s linear infinite;
 }
 
-#planet {
-  width: 200px;
-  height: 200px;
-  animation: spin 5s infinite linear;
-
-}
-
-@keyframes spin {
+@keyframes bloodFlow {
   0% {
-    transform: rotateZ(0deg);
+    top: -100%;
   }
+
   100% {
-    transform: rotateZ(360deg);
+    top: 100%;
   }
 }
 
-@keyframes spinZ {
+/* Hiệu ứng Hào quang khi count = 0 */
+.halo {
+  box-shadow: 0 0 20px yellow, 0 0 40px orange, 0 0 60px red;
+  animation: haloGlow 1s infinite alternate;
+}
+
+@keyframes haloGlow {
   0% {
-    transform: rotateZ(360deg);
+    box-shadow: 0 0 10px yellow, 0 0 20px orange, 0 0 30px red;
   }
+
   100% {
-    transform: rotateZ(0deg);
+    box-shadow: 0 0 30px yellow, 0 0 50px orange, 0 0 70px red;
   }
 }
 
-@media (max-width: 600px) {
-  .permission_denied h1 {
-    font-size: 75px;
-  }
-  .permission_denied h3 {
-    font-size: 16px;
-    width: 200px;
-    margin: 0 auto;
-    line-height: 23px;
-  }
-  .permission_denied h3 span {
-    width: 60px;
-  }
-  #astronaut {
-    width: 35px;
-    right: 40px;
-    top: 170px;
-  }
+/* Dấu tay máu */
+.blood-hand {
+  position: absolute;
+  display: inline-block;
+  width: 100px;
+  opacity: 0;
+  transition: opacity 0.5s ease-in;
+  animation: appear 1s forwards;
 }
 
+@keyframes appear {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
