@@ -75,6 +75,6 @@ Using npm:
 ### Usage
 Run the project with:
 Using npm:
-	```sh
+	```
 	npm run dev
 	```
