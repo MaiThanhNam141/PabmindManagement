@@ -31,10 +31,10 @@ const Dashboard = () => {
         {/* Navbar */}
         <div style={{ width: '100%', backgroundColor: '#DEFFD3', color: '#3E3E3E', height: '4rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 1rem', borderRadius: 5 }}>
           <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-            <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
               <img src={Logo} alt="Logo" style={{ height: '2.5rem' }} />
               <span style={{ marginLeft: '1rem', fontSize: '1.125rem', fontWeight: 'bold' }}>Trang chủ</span>
-            </div>
+            </motion.div>
           </Link>
 
           <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -42,22 +42,34 @@ const Dashboard = () => {
               <>
                 <Link to={'/password'} style={{ textDecoration: 'none', cursor: 'pointer' }}>
                   <motion.span
-                    style={{ marginLeft: '10px', whiteSpace: 'nowrap', color: '#000', fontSize: 15, fontWeight: '300', textDecoration: 'none' }}
+                    style={{
+                      marginLeft: '10px',
+                      whiteSpace: 'nowrap',
+                      color: '#000',
+                      fontSize: 15,
+                      fontWeight: '300',
+                      textDecoration: 'none',
+                    }}
                     initial={{ opacity: 0, width: 0 }}
                     animate={{ opacity: 1, width: 'auto' }}
                     exit={{ opacity: 0, width: 0 }}
-                    transition={{ duration: 0.2, delay: 0.3 }}
+                    transition={{ duration: 0.1, delay: 0.1 }}
+                    whileHover={{
+                      color: 'red',
+                      transition: { duration: 0.1 },
+                    }}
                   >
                     {currentUser.email}
                   </motion.span>
                 </Link>
-                {/* <span>{currentUser.email}</span> */}
-                <button
+                <motion.button
                   onClick={handleLogout}
                   className="btn"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
                 >
                   Đăng xuất
-                </button>
+                </motion.button>
               </>
             )}
           </div>

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactCrop from 'react-image-crop';
+import { motion } from 'framer-motion';
 import 'react-image-crop/dist/ReactCrop.css';
 
 export const styles = {
@@ -12,6 +13,7 @@ export const styles = {
 		background: '#f8f9fa',
 		borderRadius: '8px',
 		boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
+		width: '100%'
 	},
 	canvasWrapper: {
 		display: 'flex',
@@ -22,6 +24,7 @@ export const styles = {
 		borderRadius: '4px',
 		background: '#fff',
 		marginTop: '-10px',
+		width: '100%'
 	},
 	previewText: {
 		color: 'black',
@@ -37,7 +40,7 @@ export const styles = {
 		border: 'none',
 		borderRadius: '4px',
 		cursor: 'pointer',
-		transition: '0.3s',
+		transition: '0.1s',
 	},
 	primaryButton: {
 		background: '#007bff',
@@ -110,8 +113,8 @@ const ImageCropper = ({ src, onComplete, onCancel }) => {
 				<canvas ref={previewCanvasRef} style={{ width: completedCrop?.width || 0, height: completedCrop?.height || 0 }} />
 			</div>
 			<div style={styles.buttonGroup}>
-				<button style={{ ...styles.button, ...styles.primaryButton }} onClick={handleConfirm}>Xác nhận</button>
-				<button style={{ ...styles.button, ...styles.secondaryButton }} onClick={onCancel}>Hủy</button>
+				<motion.button whileHover={{ scale: 1.1 }} style={{ ...styles.button, ...styles.primaryButton }} onClick={handleConfirm}>Xác nhận</motion.button>
+				<motion.button whileHover={{ scale: 1.1 }} style={{ ...styles.button, ...styles.secondaryButton }} onClick={onCancel}>Hủy</motion.button>
 			</div>
 		</div>
 	);

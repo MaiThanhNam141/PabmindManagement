@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Swal from 'sweetalert2';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db, storage } from "../firebase/config";
@@ -19,6 +19,8 @@ const Blog = () => {
   const [croppedImage, setCroppedImage] = useState(null);
   const [showCropper, setShowCropper] = useState(false);
 
+  const fileInputRef = useRef(null);
+
   useEffect(() => {
     fetchBlogs();
   }, []);
@@ -37,6 +39,10 @@ const Blog = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleButtonClick = () => {
+    fileInputRef.current.click();
   };
 
   const handleFileChange = (e) => {
@@ -190,15 +196,26 @@ const Blog = () => {
         </div>
         <div style={styles.inputGroup}>
           <label style={styles.label}>Upload Hình ảnh (chỉ PNG, JPG)</label>
+          <motion.button
+            style={styles.buttonFile}
+            onClick={handleButtonClick}
+            onMouseOver={(e) => Object.assign(e.target.style, styles.buttonFileHover)}
+            onMouseOut={(e) => Object.assign(e.target.style, styles.buttonFile)}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.8 }}
+          >
+            Chọn ảnh
+          </motion.button>
           <input
             type='file'
             accept='image/png, image/jpeg'
-            style={styles.input}
+            style={styles.inputFile}
             onChange={handleFileChange}
+            ref={fileInputRef}
           />
         </div>
         {showCropper && cropSrc && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ width: '100%'}}>
             <ImageCropper
               src={cropSrc}
               onComplete={(blob) => {
@@ -212,22 +229,23 @@ const Blog = () => {
 
         {/* Review ảnh đã cắt */}
         {croppedImage && (
-          <div style={{ marginBottom: '1rem' }}>
+          <motion.div style={{ marginBottom: '1rem', cursor: 'pointer' }} onClick={() => window.open(URL.createObjectURL(croppedImage), '_blank')}>
             <h3>Hình ảnh đã cắt:</h3>
             <img
               src={URL.createObjectURL(croppedImage)}
               alt="Cropped"
               style={{ maxWidth: '100%' }}
             />
-          </div>
+          </motion.div>
         )}
-        <button
+        <motion.button
           style={isSending ? styles.disabledButton : styles.button}
           onClick={handleSubmitPost}
           disabled={isSending}
+          whileHover={{ scale: 1.1 }}
         >
           {isSending ? 'Đang gửi...' : 'Thêm Blog'}
-        </button>
+        </motion.button>
       </div>
 
       <div style={{ marginTop: '2rem' }}>
@@ -244,7 +262,7 @@ const Blog = () => {
           <tbody>
             <AnimatePresence>
               {blogs.map((blog) => (
-                <tr key={blog.id} style={styles.tableTr}>
+                <motion.tr key={blog.id} style={styles.tableTr} whileHover={{ scale: 1.1, backgroundColor: "#f0f8ff"}}>
                   <td style={styles.indexTd}>{blog.index}</td>
                   <td style={styles.tableTd}>
                     <a href={blog.link} target='_blank' rel='noopener noreferrer' style={styles.link}>
@@ -269,7 +287,7 @@ const Blog = () => {
                       Xóa
                     </motion.button>
                   </td>
-                </tr>
+                </motion.tr>
               ))}
             </AnimatePresence>
           </tbody>

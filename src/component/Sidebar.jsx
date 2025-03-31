@@ -35,6 +35,7 @@ const Sidebar = () => {
 				flexDirection: 'column',
 				borderRadius:5,
 				borderRight: '1px solid rgba(107, 114, 128, 0.5)',
+				minHeight: '100vh'
 			}}>
 				<motion.button
 					whileHover={{ scale: 1.1 }}
@@ -56,7 +57,10 @@ const Sidebar = () => {
 				<nav style={{ marginTop: '32px', flexGrow: 1 }}>
 					{SIDEBAR_ITEMS.map((item) => (
 						<Link key={item.href} to={item.href} style={{ textDecoration: 'none' }}>
-							<motion.div style={{
+							<motion.div 
+							whileHover={{ scale: 1.1 }}
+							whileTap={{ scale: 0.9 }}
+							style={{
 								display: 'flex',
 								alignItems: 'center',
 								padding: '16px',
@@ -64,12 +68,9 @@ const Sidebar = () => {
 								fontWeight: 500,
 								borderRadius: '8px',
 								borderWidth:10,
-								transition: 'background-color 0.3s',
+								transition: '0.2s',
 								marginBottom: '8px',
 								cursor: 'pointer',
-								':hover': {
-									backgroundColor: 'rgba(107, 114, 128, 0.5)',
-								}
 							}}>
 								<item.icon size={20} style={{ color: item.color, minWidth: '10px' }} />
 								<AnimatePresence>

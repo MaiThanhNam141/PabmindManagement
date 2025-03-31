@@ -17,13 +17,16 @@ export const styles = {
 		fontSize: '2rem'
 	},
 	form: {
+		display: 'flex',
+		flexDirection: 'column',
 		marginBottom: '2rem',
 		padding: '1rem',
 		backgroundColor: '#f9f9f9',
-		borderRadius: '8px'
+		alignItems: 'center'
 	},
 	inputGroup: {
-		marginBottom: '1.2rem'
+		marginBottom: '1.2rem',
+		width: '100%'
 	},
 	label: {
 		display: 'block',
@@ -38,23 +41,38 @@ export const styles = {
 		border: '1px solid #bdc3c7',
 		fontSize: '1rem'
 	},
+	inputFile: {
+		display: 'none'
+	},
+	buttonFile: {
+		padding: '10px 20px',
+		backgroundColor: '#007bff',
+		color: 'white',
+		border: 'none',
+		borderRadius: '5px',
+		cursor: 'pointer',
+		fontSize: '16px',
+		fontWeight: 'bold',
+		transition: 'background-color 0.3s ease',
+	},
+	buttonFileHover: {
+		backgroundColor: '#0056b3',
+	},
 	button: {
-		width: '100%',
+		width: '30%',
 		padding: '0.8rem',
 		backgroundColor: '#27ae60',
 		color: '#fff',
-		border: 'none',
 		borderRadius: '4px',
 		fontSize: '1rem',
 		cursor: 'pointer',
-		transition: 'background-color 0.3s'
+		transition: 'background-color 0.3s',
 	},
 	disabledButton: {
-		width: '100%',
+		width: '30%',
 		padding: '0.8rem',
 		backgroundColor: '#27ae60',
 		color: '#fff',
-		border: 'none',
 		borderRadius: '4px',
 		fontSize: '1rem',
 		opacity: 0.6,
