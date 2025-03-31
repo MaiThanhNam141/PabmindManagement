@@ -376,12 +376,7 @@ const Schedule = () => {
     if (loading) {
         return (
             <div style={styles.loading}>
-                <ClimbingBoxLoader
-                    color="#87bc9d"
-                    loading
-                    size={30}
-                    speedMultiplier={0.5}
-                />
+                <ClimbingBoxLoader color="#87bc9d" loading size={30} speedMultiplier={0.5} />
             </div>
         )
     }
