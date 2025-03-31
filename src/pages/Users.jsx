@@ -8,6 +8,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { styles } from '../style/pagination';
 import EditUserForm from '../component/EditUserForm';
 import { motion } from 'framer-motion';
+import { confirmDelete } from '../component/ConfirmDelete';
+import { resolve } from 'chart.js/helpers';
 
 const Users = () => {
     const [users, setUsers] = useState([]);
@@ -141,44 +143,10 @@ const Users = () => {
         }
     };
 
-    const handleDeleteUser = async (user) => {
-        const result = await Swal.fire({
-            title: "Xác nhận xóa người dùng?",
-            html: `<p style="font-size: 16px; margin-top: 8px;">
-                      Bạn có chắc muốn xóa <strong>${user.displayName}</strong>?
-                   </p>`,
-            icon: "warning",
-            iconHtml: "⚠️",
-            showCancelButton: true,
-            confirmButtonColor: "#e74c3c",
-            cancelButtonColor: "#3498db",
-            confirmButtonText: "Xóa",
-            cancelButtonText: "Hủy",
-            reverseButtons: true,
-            focusCancel: true,
-            customClass: {
-                popup: "swal-custom-popup",
-                title: "swal-custom-title",
-                confirmButton: "swal-custom-confirm",
-                cancelButton: "swal-custom-cancel",
-            },
-        });
-
-        if (!result.isConfirmed) return;
-
+    const handleDelete = async (id) => {
         try {
-            Swal.fire({
-                title: "Đang xử lý...",
-                text: "Vui lòng đợi trong giây lát.",
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                },
-            });
-
-            await deleteDoc(doc(db, "users", user.id));
-            setUsers(users.filter(u => u.id !== user.id));
-
+            await deleteDoc(doc(db, "users", id));
+            setUsers(users.filter(u => u.id !== id));
             Swal.fire({
                 title: "Xóa thành công!",
                 text: "Người dùng đã bị xóa.",
@@ -192,6 +160,10 @@ const Users = () => {
                 icon: "error",
             });
         }
+    }
+
+    const handleDeleteUser = async (user) => {
+        confirmDelete(user.id, user.displayName, handleDelete)
     };
 
     if (loading) {

@@ -6,6 +6,7 @@ import { Trash, Edit, Info, ChevronRight, ChevronLeft, PackagePlus } from 'lucid
 import { ClimbingBoxLoader } from 'react-spinners'
 import { useLocation, useNavigate } from 'react-router-dom';
 import { styles } from '../style/pagination';
+import { confirmDelete } from '../component/ConfirmDelete';
 
 const Schedule = () => {
     const [appointments, setAppointments] = useState([]);
@@ -336,26 +337,18 @@ const Schedule = () => {
         }
     };
 
+    const handleDelete = async(id) => {
+        try {
+            await deleteDoc(doc(db, "AdviseSchedule", id));
+            setAppointments(appointments.filter(a => a.id !== id));
+            Swal.fire('Đã xóa!', 'Lịch hẹn đã được xóa', 'success');
+        } catch (error) {
+            Swal.fire('Lỗi!', 'Không thể xóa lịch hẹn', 'error');
+        }
+    }
+
     const handleDeleteAppointment = async (appointment) => {
-        Swal.fire({
-            title: `Xác nhận xóa?`,
-            text: `Bạn có chắc chắn muốn xóa lịch hẹn của ${appointment.displayName}?`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#000',
-            confirmButtonText: 'Xóa',
-        }).then(async (result) => {
-            if (result.isConfirmed) {
-                try {
-                    await deleteDoc(doc(db, "AdviseSchedule", appointment.id));
-                    setAppointments(appointments.filter(a => a.id !== appointment.id));
-                    Swal.fire('Đã xóa!', 'Lịch hẹn đã được xóa', 'success');
-                } catch (error) {
-                    Swal.fire('Lỗi!', 'Không thể xóa lịch hẹn', 'error');
-                }
-            }
-        });
+        confirmDelete(appointment.id, appointment.displayName, handleDelete)
     };
 
     const makeColorIndex = (appointment) => {

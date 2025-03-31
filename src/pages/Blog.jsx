@@ -7,6 +7,7 @@ import { collection, addDoc, getDoc, getDocs, deleteDoc, doc } from '@firebase/f
 import { ClimbingBoxLoader } from 'react-spinners'
 import ImageCropper from '../component/ImageCropper';
 import { styles } from '../style/blog';
+import { confirmDelete } from '../component/ConfirmDelete';
 
 const Blog = () => {
   const [title, setTitle] = useState('');
@@ -118,42 +119,38 @@ const Blog = () => {
     }
   };
 
+  const handleDelete = (id, name) => {
+    confirmDelete(id, name, deleteBlog);
+  }
 
-  const handleDelete = async (id) => {
-    const result = await Swal.fire({
-      title: 'Bạn có chắc chắn muốn xóa?',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Xóa',
-      cancelButtonText: 'Hủy',
-    });
-
-    if (!result.isConfirmed) return;
-    setBlogs(prev => prev.filter(item => item.id !== id));
+  const deleteBlog = async (id) => {
+    setBlogs((prev) => prev.filter((item) => item.id !== id));
 
     try {
-      const docRef = doc(db, 'SliderImages', id);
+      const docRef = doc(db, "SliderImages", id);
       const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        const storagePath = await data.storagePath;
-        if (storagePath) {
-          const fileRef = ref(storage, storagePath);
-          Promise.all([
-            await deleteObject(fileRef),
-            await deleteDoc(docRef),
-          ])
-          Swal.fire('Đã xóa!', 'Bài viết đã được xóa thành công', 'success');
-        } else {
-          Swal.fire('Lỗi', 'Không tìm thấy địa chỉ hình ảnh cần xóa', 'error');
-        }
-        setBlogs(prev => prev.filter(item => item.id !== id));
-      } else {
-        Swal.fire('Lỗi', 'Không tìm thấy dữ liệu cần xóa', 'error');
+  
+      if (!docSnap.exists()) {
+        Swal.fire("Lỗi", "Không tìm thấy dữ liệu cần xóa", "error");
+        return;
       }
+  
+      const { storagePath } = docSnap.data();
+  
+      if (!storagePath) {
+        Swal.fire("Lỗi", "Không tìm thấy địa chỉ hình ảnh cần xóa", "error");
+        return;
+      }
+  
+      const fileRef = ref(storage, storagePath);
+      await Promise.all([deleteObject(fileRef), deleteDoc(docRef)]);
+  
+      setBlogs((prev) => prev.filter((item) => item.id !== id));
+  
+      Swal.fire("Đã xóa!", "Bài viết đã được xóa thành công", "success");
     } catch (error) {
       console.error(error);
-      Swal.fire('Lỗi', 'Không thể xóa bài viết', 'error');
+      Swal.fire("Lỗi", "Không thể xóa bài viết", "error");
     }
   };
 
@@ -262,7 +259,7 @@ const Blog = () => {
           <tbody>
             <AnimatePresence>
               {blogs.map((blog) => (
-                <motion.tr key={blog.id} style={styles.tableTr} whileHover={{ scale: 1.1, backgroundColor: "#f0f8ff"}}>
+                <motion.tr key={blog.id} style={styles.tableTr} whileHover={{ scale: 1.01, backgroundColor: "#f0f8ff"}}>
                   <td style={styles.indexTd}>{blog.index}</td>
                   <td style={styles.tableTd}>
                     <a href={blog.link} target='_blank' rel='noopener noreferrer' style={styles.link}>
@@ -280,9 +277,9 @@ const Blog = () => {
                   </td>
                   <td style={styles.tableTd}>
                     <motion.button
-                      whileHover={{ scale: 1.3 }}
+                      whileHover={{ scale: 1.1 }}
                       style={{ ...styles.actionButton, backgroundColor: '#e74c3c' }}
-                      onClick={() => handleDelete(blog.id)}
+                      onClick={() => handleDelete(blog.id, blog.title)}
                     >
                       Xóa
                     </motion.button>
