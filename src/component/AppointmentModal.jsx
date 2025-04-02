@@ -5,7 +5,18 @@ import styles from "../style/add-appointment.styles.module.css";
 
 const AppointmentModal = ({ isOpen, onClose, onSubmit, initState = null }) => {
 	const [formData, setFormData] = useState(() => {
-		return initState || {
+		return initState ? {
+			displayName: initState.displayName || "không có dữ liệu",
+			phone: initState.phone || "không có dữ liệu",
+			address: initState.address || "không có dữ liệu",
+			email: initState.email || "không có dữ liệu",
+			servicePackage: initState.servicePackage || "không có dữ liệu",
+			topic: initState.topic || "không có dữ liệu",
+			adviseDirect: initState.adviseDirect || "không có dữ liệu",
+			age: initState.age || "không có dữ liệu",
+			consultationDate: initState.consultationDate || "không có dữ liệu",
+			consultationTime: initState.consultationTime || "không có dữ liệu",
+		}: {
 			displayName: "",
 			phone: "",
 			address: "",
@@ -50,7 +61,7 @@ const AppointmentModal = ({ isOpen, onClose, onSubmit, initState = null }) => {
 				className={styles.modal}
 			>
 				<div className={styles.header}>
-					<h2>Thêm lịch hẹn mới</h2>
+					<h2>Thông tin lịch hẹn</h2>
 					<button onClick={onClose} className={styles.closeBtn}>
 						<X size={20} />
 					</button>

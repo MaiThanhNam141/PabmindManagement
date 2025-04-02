@@ -51,7 +51,7 @@ const Sidebar = () => {
 						backgroundColor:'#DEFFD3'
 					}}
 				>
-					<Menu size={25} />
+					<Menu size={25} color="#000" />
 				</motion.button>
 
 				<nav style={{ marginTop: '32px', flexGrow: 1 }}>

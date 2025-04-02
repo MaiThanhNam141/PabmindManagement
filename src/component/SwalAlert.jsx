@@ -1,5 +1,20 @@
 import Swal from 'sweetalert2';
 
+const formatTimestamp = (timestamp) => {
+	if (!timestamp || !timestamp.toDate) return "Không có";
+
+	const date = timestamp.toDate();
+	return new Intl.DateTimeFormat('vi-VN', {
+		hour: '2-digit',
+		minute: '2-digit',
+		second: '2-digit',
+		day: '2-digit',
+		month: '2-digit',
+		year: 'numeric',
+	}).format(date);
+};
+
+
 export const confirmSendNotification = async (title, body, token = "", fn) => {
 	const result = await Swal.fire({
 		title: `Xác nhận gửi thông báo?`,
