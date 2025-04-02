@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import Swal from 'sweetalert2';
 import { db } from "../firebase/config";
 import { collection, getDocs, deleteDoc, doc, Timestamp, updateDoc, addDoc, query, orderBy, limit, startAfter } from '@firebase/firestore';
 import { Trash, Edit, Info, ChevronRight, ChevronLeft, PackagePlus } from 'lucide-react';
 import { ClimbingBoxLoader } from 'react-spinners'
 import { useLocation, useNavigate } from 'react-router-dom';
 import { styles } from '../style/pagination';
-import { confirmDelete } from '../component/ConfirmDelete';
+import { confirmDelete, errorAlert, showInfoAppointmentAlert, successAlert } from '../component/SwalAlert';
+import AppointmentModal from '../component/AppointmentModal';
 
 const Schedule = () => {
     const [appointments, setAppointments] = useState([]);
@@ -14,6 +14,9 @@ const Schedule = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [lastVisible, setLastVisible] = useState(null);
     const [totalPages, setTotalPages] = useState(0);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectAppointment, setSelectAppointment] = useState(null);
+
     const itemPerPage = 100;
 
     const location = useLocation();
@@ -63,6 +66,7 @@ const Schedule = () => {
             setTotalPages(totalPages);
 
         } catch (error) {
+            errorAlert("Lấy dữ liệu thất bại");
             console.error("Error fetching users: ", error);
         } finally {
             setLoading(false);
@@ -91,6 +95,7 @@ const Schedule = () => {
                 setAppointments(prev => [...prev, ...itemList]);
                 setLastVisible(dataSnapshot.docs[dataSnapshot.docs.length - 1]);
             } catch (error) {
+                errorAlert("Lấy dữ liệu thất bại");
                 console.error("Error fetching next page: ", error);
             } finally {
                 setLoading(false);
@@ -127,223 +132,60 @@ const Schedule = () => {
         }
     };
 
-    const handleAdd = async () => {
-        const { value: formValues } = await Swal.fire({
-            title: 'Thêm lịch hẹn mới',
-            html: `
-                <div style="text-align: left; margin-bottom: 10px;">
-                    <label style="display: block; font-weight: bold;">Tên khách hàng</label>
-                    <input id="swal-input1" class="swal2-input" placeholder="Tên khách hàng" style="width: 85%;">
-                </div>
-                <div style="text-align: left; margin-bottom: 10px;">
-                    <label style="display: block; font-weight: bold;">Số điện thoại</label>
-                    <input id="swal-input2" class="swal2-input" placeholder="Số điện thoại" style="width: 85%;">
-                </div>
-                <div style="text-align: left; margin-bottom: 10px;">
-                    <label style="display: block; font-weight: bold;">Địa chỉ</label>
-                    <input id="swal-input3" class="swal2-input" placeholder="Địa chỉ" style="width: 85%;">
-                </div>
-                <div style="text-align: left; margin-bottom: 10px;">
-                    <label style="display: block; font-weight: bold;">Gói dịch vụ</label>
-                    <input id="swal-input4" class="swal2-input" placeholder="Gói dịch vụ" style="width: 85%;">
-                </div>
-                <div style="text-align: left; margin-bottom: 10px;">
-                    <label style="display: block; font-weight: bold;">Chủ đề</label>
-                    <input id="swal-input5" class="swal2-input" placeholder="Chủ đề" style="width: 85%;">
-                </div>
-                <div style="text-align: left; margin-bottom: 10px;">
-                    <label style="display: block; font-weight: bold;">Email</label>
-                    <input id="swal-inputemail" class="swal2-input" placeholder="Chủ đề" style="width: 85%;">
-                </div>
-                <div style="text-align: left; margin-bottom: 10px;">
-                    <label style="display: block; font-weight: bold;">Hình thức tư vấn</label>
-                    <input id="swal-input6" class="swal2-input" placeholder="Hình thức tư vấn" style="width: 85%;">
-                </div>    
-                <div style="text-align: left; margin-bottom: 10px;">
-                    <label style="display: block; font-weight: bold;">Tuổi</label>
-                    <input id="swal-input9" class="swal2-input" placeholder="Tuổi" style="width: 85%;">
-                </div>    
-                <div style="text-align: left; margin-bottom: 10px;">
-                    <label style="display: block; font-weight: bold;">Ngày tư vấn</label>
-                    <input id="swal-input7-date" type="date" class="swal2-input" style="width: 85%;">
-                </div>
-                <div style="text-align: left; margin-bottom: 10px;">
-                    <label style="display: block; font-weight: bold;">Giờ tư vấn</label>
-                    <input id="swal-input7-time" type="time" class="swal2-input" style="width: 85%;">
-                </div>
-            `,
-            showCancelButton: true,
-            confirmButtonText: 'Lưu',
-            cancelButtonText: 'Hủy',
-            preConfirm: () => {
-                const dateConsultationValue = document.getElementById('swal-input7-date').value;
-                const timeConsultationValue = document.getElementById('swal-input7-time').value;
-                const consultationDate = new Date(`${dateConsultationValue}T${timeConsultationValue}:00`);
-
-                return {
-                    displayName: document.getElementById('swal-input1').value,
-                    phone: document.getElementById('swal-input2').value,
-                    address: document.getElementById('swal-input3').value,
-                    email: document.getElementById('swal-inputemail').value,
-                    servicePackage: document.getElementById('swal-input4').value,
-                    topic: document.getElementById('swal-input5').value,
-                    adviseDirect: document.getElementById('swal-input6').value,
-                    age: document.getElementById('swal-input9').value,
-                    consultationDate: Timestamp.fromDate(consultationDate),
-                    time: Timestamp.fromDate(new Date())
-                };
-            }
-        });
-
+    const handleAdd = async (formValues) => {
         if (formValues) {
             try {
-                await addDoc(collection(db, "AdviseSchedule"), formValues);
-                Swal.fire('Thành công!', 'Thêm lịch hẹn thành công', 'success');
-                setAppointments(prev => [...prev, formValues]);
+                const newAppointment = {
+                    ...formValues,
+                    consultationDate: Timestamp.fromDate(formValues.consultationDate),
+                    time: Timestamp.fromDate(new Date()),
+                };
+                await addDoc(collection(db, "AdviseSchedule"), newAppointment);
+                successAlert('Thêm lịch hẹn thành công')
+                setAppointments((prev) => [...prev, newAppointment]);
             } catch (error) {
                 console.error("Error add appointment: ", error);
-                Swal.fire('Lỗi!', 'Không thể thêm lịch hẹn', 'error');
+                errorAlert("Không thể thêm lịch hẹn");
             }
         }
-    };
-
-    const formatTimestamp = (timestamp) => {
-        if (!timestamp || !timestamp.toDate) return "Không có";
-
-        const date = timestamp.toDate();
-        return new Intl.DateTimeFormat('vi-VN', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-        }).format(date);
-    };
-
-    const formatDateForInput = (timestamp) => {
-        if (!timestamp || !timestamp.toDate) return '';
-        const date = timestamp.toDate();
-        const pad = (num) => num.toString().padStart(2, '0');
-        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-    };
-
-    const formatTimeForInput = (timestamp) => {
-        if (!timestamp || !timestamp.toDate) return '';
-        const date = timestamp.toDate();
-        const pad = (num) => num.toString().padStart(2, '0');
-        return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        console.error("formValues:", formValues)
+        errorAlert("Không thể thêm lịch hẹn");
+        return 0;
     };
 
     const handleInfo = (appointment) => {
-        Swal.fire({
-            title: 'Thông tin chi tiết',
-            html: `
-                <p><strong>Tên:</strong> ${appointment?.displayName || "Không có dữ liệu"}</p>
-                <p><strong>Số điện thoại:</strong> ${appointment?.phone || "Không có dữ liệu"}</p>
-                <p><strong>Địa chỉ:</strong> ${appointment?.address || "Không có dữ liệu"}</p>
-                <p><strong>Email:</strong> ${appointment?.email || "Không có dữ liệu"}</p>
-                <p><strong>Gói dịch vụ:</strong> ${appointment?.servicePackage || "Không có dữ liệu"}</p>
-                <p><strong>Chủ đề:</strong> ${appointment?.topic || "Không có dữ liệu"}</p>
-                <p><strong>Hình thức tư vấn:</strong> ${appointment?.adviseDirect || "Không có dữ liệu"}</p>
-                <p><strong>Tuổi:</strong> ${appointment?.age || "Không có dữ liệu"}</p>
-                <p><strong>Ngày hẹn:</strong> ${formatTimestamp(appointment?.consultationDate) || "Không có dữ liệu"}</p>
-                <p><strong>Ngày đặt lịch:</strong> ${formatTimestamp(appointment?.time) || "Không có dữ liệu"}</p>
-            `,
-            confirmButtonText: 'Đóng'
-        });
+        showInfoAppointmentAlert(appointment)
     };
 
-    const handleEditAppointment = async (appointment) => {
-        const { value: formValues } = await Swal.fire({
-            title: 'Chỉnh sửa lịch hẹn',
-            html: `
-                <div style="text-align: left; margin-bottom: 10px;">
-                    <label style="display: block; font-weight: bold;">Tên khách hàng</label>
-                    <input id="swal-input1" class="swal2-input" value="${appointment?.displayName || "Không có dữ liệu"}" placeholder="Tên khách hàng" style="width: 85%;">
-                </div>
-                <div style="text-align: left; margin-bottom: 10px;">
-                    <label style="display: block; font-weight: bold;">Số điện thoại</label>
-                    <input id="swal-input2" class="swal2-input" value="${appointment?.phone || "Không có dữ liệu"}" placeholder="Số điện thoại" style="width: 85%;">
-                </div>
-                <div style="text-align: left; margin-bottom: 10px;">
-                    <label style="display: block; font-weight: bold;">Địa chỉ</label>
-                    <input id="swal-input3" class="swal2-input" value="${appointment?.address || "Không có dữ liệu"}" placeholder="Địa chỉ" style="width: 85%;">
-                </div>
-                <div style="text-align: left; margin-bottom: 10px;">
-                    <label style="display: block; font-weight: bold;">Email</label>
-                    <input id="swal-email" class="swal2-input" value="${appointment?.email || "Không có dữ liệu"}" placeholder="Địa chỉ" style="width: 85%;">
-                </div>
-                <div style="text-align: left; margin-bottom: 10px;">
-                    <label style="display: block; font-weight: bold;">Gói dịch vụ</label>
-                    <input id="swal-input4" class="swal2-input" value="${appointment?.servicePackage || "Không có dữ liệu"}" placeholder="Gói dịch vụ" style="width: 85%;">
-                </div>
-                <div style="text-align: left; margin-bottom: 10px;">
-                    <label style="display: block; font-weight: bold;">Chủ đề</label>
-                    <input id="swal-input5" class="swal2-input" value="${appointment?.topic || "Không có dữ liệu"}" placeholder="Chủ đề" style="width: 85%;">
-                </div>
-                <div style="text-align: left; margin-bottom: 10px;">
-                    <label style="display: block; font-weight: bold;">Hình thức tư vấn</label>
-                    <input id="swal-input6" class="swal2-input" value="${appointment?.adviseDirect || "Không có dữ liệu"}" placeholder="Hình thức tư vấn" style="width: 85%;">
-                </div>          
-                <div style="text-align: left; margin-bottom: 10px;">
-                    <label style="display: block; font-weight: bold;">Tuổi</label>
-                    <input id="swal-input9" class="swal2-input" value="${appointment?.age || "Không có dữ liệu"}" placeholder="Tuổi" style="width: 85%;">
-                </div>          
-                <div style="text-align: left; margin-bottom: 10px;">
-                    <label style="display: block; font-weight: bold;">Ngày tư vấn</label>
-                    <input id="swal-input7-date" type="date" class="swal2-input" value="${formatDateForInput(appointment?.consultationDate) || "Không có dữ liệu"}" style="width: 85%;">
-                </div>
-                <div style="text-align: left; margin-bottom: 10px;">
-                    <label style="display: block; font-weight: bold;">Giờ tư vấn</label>
-                    <input id="swal-input7-time" type="time" class="swal2-input" value="${formatTimeForInput(appointment?.consultationDate) || "Không có dữ liệu"}" style="width: 85%;">
-                </div>
-                <div style="text-align: left; margin-bottom: 10px;">
-                    <label style="display: block; font-weight: bold;">Ngày đặt hẹn</label>
-                    <input id="swal-input8" class="swal2-input" value="${formatTimestamp(appointment.time)}" style="width: 85%;" disabled>
-                </div>
-            `,
-            showCancelButton: true,
-            confirmButtonText: 'Lưu',
-            preConfirm: () => {
-                const dateValue = document.getElementById('swal-input7-date').value;
-                const timeValue = document.getElementById('swal-input7-time').value;
-
-                const consultationDate = new Date(`${dateValue}T${timeValue}:00`);
-
-                return {
-                    displayName: document.getElementById('swal-input1').value,
-                    phone: document.getElementById('swal-input2').value,
-                    address: document.getElementById('swal-input3').value,
-                    email: document.getElementById('swal-email').value,
-                    servicePackage: document.getElementById('swal-input4').value,
-                    topic: document.getElementById('swal-input5').value,
-                    adviseDirect: document.getElementById('swal-input6').value,
-                    consultationDate: Timestamp.fromDate(consultationDate),
-                    age: document.getElementById('swal-input9').value,
-                };
-            }
-        });
-
+    const handleEditAppointment = async (formValues) => {
         if (formValues) {
             try {
-                await updateDoc(doc(db, "AdviseSchedule", appointment.id), formValues);
-                Swal.fire('Thành công!', 'Cập nhật lịch hẹn thành công', 'success');
-                setAppointments(appointments.map(a => a.id === appointment.id ? { ...a, ...formValues } : a));
+                const newAppointment = {
+                    ...formValues,
+                    consultationDate: Timestamp.fromDate(formValues.consultationDate),
+                    time: Timestamp.fromDate(new Date()),
+                };
+
+                await updateDoc(doc(db, "AdviseSchedule", newAppointment.id), newAppointment);
+                successAlert('Cập nhật lịch hẹn thành công')
+                setAppointments(appointments.map(item => item.id === newAppointment.id ? { ...item, ...newAppointment } : item));
             } catch (error) {
                 console.error("Error updating appointment: ", error);
-                Swal.fire('Lỗi!', 'Không thể cập nhật lịch hẹn', 'error');
+                errorAlert("Không thể cập nhật lịch hẹn")
             }
         }
+        console.error("formValues:", formValues)
+        errorAlert("Không thể cập nhật lịch hẹn");
+        return 0;
     };
 
-    const handleDelete = async(id) => {
+    const handleDelete = async (id) => {
         try {
             await deleteDoc(doc(db, "AdviseSchedule", id));
             setAppointments(appointments.filter(a => a.id !== id));
-            Swal.fire('Đã xóa!', 'Lịch hẹn đã được xóa', 'success');
+            successAlert('Lịch hẹn đã được xóa')
         } catch (error) {
-            Swal.fire('Lỗi!', 'Không thể xóa lịch hẹn', 'error');
+            errorAlert("Không thể xóa lịch hẹn");
         }
     }
 
@@ -374,6 +216,14 @@ const Schedule = () => {
         )
     }
 
+    const handleSubmit = (formValues = null) => {
+        if (selectAppointment) {
+            handleEditAppointment(formValues);
+        } else {
+            handleAdd(formValues)
+        }
+    }
+
     return (
         <div style={styles.container}>
             <style>
@@ -392,7 +242,7 @@ const Schedule = () => {
             </style>
             <h2 style={styles.header}>Danh sách lịch hẹn</h2>
             <div style={{ display: 'flex', justifyContent: 'space-between', flexDirection: 'column', alignItems: 'center' }}>
-                <button style={styles.addButton} onClick={() => handleAdd()}><PackagePlus size={16} />Thêm lịch hẹn mới</button>
+                <button style={styles.addButton} onClick={() => setIsModalOpen(true)}><PackagePlus size={16} />Thêm lịch hẹn mới</button>
             </div>
             <div style={styles.searchContainer}>
                 <input
@@ -436,7 +286,7 @@ const Schedule = () => {
                                             <button style={styles.actionButton} className="actionButton" onClick={() => handleInfo(item)}>
                                                 <Info size={20} color="blue" />
                                             </button>
-                                            <button style={styles.actionButton} className="actionButton" onClick={() => handleEditAppointment(item)}>
+                                            <button style={styles.actionButton} className="actionButton" onClick={() => { setSelectAppointment(item); setIsModalOpen(true) }}>
                                                 <Edit size={20} color="#4CAF50" />
                                             </button>
                                             <button style={styles.actionButton} className="actionButton" onClick={() => handleDeleteAppointment(item)}>
@@ -474,6 +324,12 @@ const Schedule = () => {
                     <ChevronRight size={25} />
                 </button>
             </div>
+            <AppointmentModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSubmit={handleSubmit}
+                initState={selectAppointment}
+            />
         </div>
     );
 };

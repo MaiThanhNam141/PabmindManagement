@@ -9,6 +9,7 @@ import loadingGif from '../assets/loading.gif';
 import ReCAPTCHA from "react-google-recaptcha";
 
 import '../style/Login.css'
+import { errorAlert, successAlert } from '../component/SwalAlert';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -37,12 +38,8 @@ const Login = () => {
         event.preventDefault();
 
         if (!captchaValue) {
-            Swal.fire({
-                title: 'Xác nhận CAPTCHA',
-                text: 'Vui lòng xác nhận bạn không phải là robot.',
-                icon: 'warning',
-                confirmButtonText: 'OK',
-            });
+            errorAlert("Vui lòng xác nhận bạn không phải là robot.")
+            setError("Vui lòng xác nhận bạn không phải là robot.")
             return;
         }
 
@@ -64,46 +61,27 @@ const Login = () => {
         const e = email.trim();
         const p = password.trim();
         if (!e || e.length < 6) {
-            Swal.fire({
-                title: 'Đăng nhập thất bại!',
-                text: 'Email quá ngắn. Vui lòng thử lại.',
-                icon: 'error',
-                confirmButtonText: 'OK',
-            });
-            setError(null)
+            errorAlert("Email quá ngắn. Vui lòng thử lại.")
+            setError("Email quá ngắn. Vui lòng thử lại.")
             return null;
         }
         if (!p || p.length < 6) {
-            Swal.fire({
-                title: 'Đăng nhập thất bại!',
-                text: 'Mật khẩu quá ngắn. Vui lòng thử lại.',
-                icon: 'error',
-                confirmButtonText: 'OK',
-            });
+            errorAlert("Mật khẩu quá ngắn. Vui lòng thử lại.")
+            setError("Mật khẩu quá ngắn. Vui lòng thử lại.")
             return null;
         }
 
         try {
             await signInWithEmailAndPassword(auth, e, p)
                 .then((userCredential) => {
-                    Swal.fire({
-                        title: 'Đăng nhập thành công!',
-                        text: 'Bạn đã đăng nhập thành công vào hệ thống.',
-                        icon: 'success',
-                        confirmButtonText: 'OK',
-                    });
+                    successAlert("Bạn đã đăng nhập thành công vào hệ thống.")
                     const user = userCredential.user;
                     dispatch({ type: "LOGIN", payload: user });
                     navigate("/")
                     setError(null);
                 })
                 .catch((error) => {
-                    Swal.fire({
-                        title: 'Đăng nhập thất bại!',
-                        text: 'Email hoặc mật khẩu không đúng. Vui lòng thử lại.',
-                        icon: 'error',
-                        confirmButtonText: 'OK',
-                    });
+                    errorAlert("Email hoặc mật khẩu không đúng. Vui lòng thử lại")
                     setError(error.message);
                 })
         } catch (error) {
@@ -116,7 +94,7 @@ const Login = () => {
             <div style={{ padding: '20px', textAlign: 'center' }}>
                 <div>
                     <img
-                        alt="Your Company"
+                        alt="Logo"
                         src={Logo}
                         style={{ width: '20%', marginBottom: '20px' }}
                     />

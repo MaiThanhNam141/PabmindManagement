@@ -28,7 +28,7 @@ const Welcome = () => {
                     fetchWeather(latitude, longitude);
                 },
                 (err) => {
-                    setError("Unable to retrieve location.");
+                    setError(`Unable to retrieve location. Error: ${err.message}`);
                 }
             );
         } else {

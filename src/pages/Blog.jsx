@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import Swal from 'sweetalert2';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db, storage } from "../firebase/config";
 import { getDownloadURL, ref, uploadBytes, deleteObject } from '@firebase/storage';
@@ -7,7 +6,7 @@ import { collection, addDoc, getDoc, getDocs, deleteDoc, doc } from '@firebase/f
 import { ClimbingBoxLoader } from 'react-spinners'
 import ImageCropper from '../component/ImageCropper';
 import { styles } from '../style/blog';
-import { confirmDelete } from '../component/ConfirmDelete';
+import { confirmAdd, confirmDelete, errorAlert, successAlert } from '../component/SwalAlert';
 
 const Blog = () => {
   const [title, setTitle] = useState('');
@@ -36,6 +35,7 @@ const Blog = () => {
       }));
       setBlogs(blogsData);
     } catch (error) {
+      errorAlert("Lấy dữ liệu thất bại");
       console.error(error);
     } finally {
       setLoading(false);
@@ -54,32 +54,11 @@ const Blog = () => {
       setCropSrc(imageUrl);
       setShowCropper(true);
     } else {
-      Swal.fire('Lỗi', 'Chỉ hỗ trợ file PNG, JPG', 'error');
       e.target.value = null;
     }
   };
 
-
-  const handleSubmitPost = async () => {
-    if (!title || !shareLink || !fileUpload) {
-      Swal.fire('Lỗi', 'Vui lòng nhập đầy đủ thông tin', 'error');
-      return;
-    }
-    if (blogs.length >= 5) {
-      Swal.fire('Lỗi', 'Chỉ có thể lưu tối đa 5 bài blog, hãy xóa bớt!', 'error');
-      return;
-    }
-
-    const result = await Swal.fire({
-      title: 'Xác nhận thêm blog?',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Thêm',
-      cancelButtonText: 'Hủy',
-    });
-
-    if (!result.isConfirmed) return;
-
+  const addBlog = async () => {
     try {
       setIsSending(true);
       const fileName = `${Date.now()}.jpg`;
@@ -98,25 +77,40 @@ const Blog = () => {
 
       const docRef = await addDoc(collection(db, 'SliderImages'), newBlog);
 
-      Swal.fire('Thành công', 'Bài viết đã được thêm!', 'success');
-
+      successAlert("Bài viết đã được thêm!")
       setBlogs(prev => [
         ...prev,
         { ...newBlog, id: docRef.id, index: prev.length + 1 }
       ]);
-
-      setTitle('');
-      setShareLink('');
-      setFileUpload(null);
-
-      setCroppedImage(null);
-      setCropSrc('');
     } catch (error) {
       console.error(error);
-      Swal.fire('Lỗi', 'Có lỗi xảy ra, vui lòng thử lại!', 'error');
+      errorAlert("Có lỗi xảy ra, vui lòng thử lại!")
     } finally {
       setIsSending(false);
+      reNewState();
     }
+  }
+
+  const reNewState = () => {
+    setTitle('');
+    setShareLink('');
+    setFileUpload(null);
+
+    setCroppedImage(null);
+    setCropSrc('');
+  }
+
+  const handleSubmitPost = async () => {
+    if (!title || !shareLink || !fileUpload) {
+      errorAlert('Vui lòng nhập đầy đủ thông tin')
+      return;
+    }
+    if (blogs.length >= 5) {
+      errorAlert('Chỉ có thể lưu tối đa 5 bài blog, hãy xóa bớt!')
+      return;
+    }
+
+    confirmAdd(addBlog)
   };
 
   const handleDelete = (id, name) => {
@@ -124,33 +118,31 @@ const Blog = () => {
   }
 
   const deleteBlog = async (id) => {
-    setBlogs((prev) => prev.filter((item) => item.id !== id));
-
     try {
       const docRef = doc(db, "SliderImages", id);
       const docSnap = await getDoc(docRef);
-  
+
       if (!docSnap.exists()) {
-        Swal.fire("Lỗi", "Không tìm thấy dữ liệu cần xóa", "error");
+        errorAlert("Không tìm thấy dữ liệu cần xóa")
         return;
       }
-  
+
       const { storagePath } = docSnap.data();
-  
+
       if (!storagePath) {
-        Swal.fire("Lỗi", "Không tìm thấy địa chỉ hình ảnh cần xóa", "error");
+        errorAlert("Không tìm thấy địa chỉ hình ảnh cần xóa")
         return;
       }
-  
+
       const fileRef = ref(storage, storagePath);
       await Promise.all([deleteObject(fileRef), deleteDoc(docRef)]);
-  
+
       setBlogs((prev) => prev.filter((item) => item.id !== id));
-  
-      Swal.fire("Đã xóa!", "Bài viết đã được xóa thành công", "success");
+
+      successAlert("Bài viết đã được xóa thành công");
     } catch (error) {
       console.error(error);
-      Swal.fire("Lỗi", "Không thể xóa bài viết", "error");
+      errorAlert("Đã xảy ra lỗi nào đó")
     }
   };
 
@@ -212,7 +204,7 @@ const Blog = () => {
           />
         </div>
         {showCropper && cropSrc && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ width: '100%'}}>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ width: '100%' }}>
             <ImageCropper
               src={cropSrc}
               onComplete={(blob) => {
@@ -259,7 +251,7 @@ const Blog = () => {
           <tbody>
             <AnimatePresence>
               {blogs.map((blog) => (
-                <motion.tr key={blog.id} style={styles.tableTr} whileHover={{ scale: 1.01, backgroundColor: "#f0f8ff"}}>
+                <motion.tr key={blog.id} style={styles.tableTr} whileHover={{ scale: 1.01, backgroundColor: "#f0f8ff" }}>
                   <td style={styles.indexTd}>{blog.index}</td>
                   <td style={styles.tableTd}>
                     <a href={blog.link} target='_blank' rel='noopener noreferrer' style={styles.link}>

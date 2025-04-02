@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import Swal from 'sweetalert2'
 import { Loader2 } from 'lucide-react'
 import CryptoJS from 'crypto-js'
+import { confirmSendNotification, errorAlert, successAlert } from '../component/SwalAlert'
 
 const FCM = () => {
     const [title, setTitle] = useState('');
@@ -17,31 +17,10 @@ const FCM = () => {
 
     const confirmAndSendNotification = () => {
         if (!title || !body) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Lỗi',
-                text: 'Vui lòng nhập cả tiêu đề và nội dung thông báo',
-            });
+            errorAlert("Vui lòng nhập cả tiêu đề và nội dung thông báo")
             return;
         }
-    
-        Swal.fire({
-            title: 'Xác nhận gửi thông báo',
-            html: `
-                <p><strong>📢 Tiêu đề:</strong> ${title}</p>
-                <p><strong>📝 Nội dung:</strong> ${body}</p>
-                ${token ? `<p><strong>🔑 Token:</strong> ${token}</p>` : ''}
-                <p>Bạn có chắc muốn gửi thông báo này?</p>
-            `,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'Gửi ngay 🚀',
-            cancelButtonText: 'Hủy',
-        }).then(async (result) => {
-            if (result.isConfirmed) {
-                await handleSend(); // Gọi hàm gửi thông báo
-            }
-        });
+        confirmSendNotification(title, body, token, handleSend)
     };    
 
     const sendNotificationToUser = async (title, body, token) => {
@@ -95,15 +74,9 @@ const FCM = () => {
         }
     }
 
-
     const handleSend = async () => {
         if (!title || !body) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Lỗi',
-                text: 'Vui lòng nhập cả tiêu đề và nội dung thông báo',
-            })
-            return;
+            errorAlert("Vui lòng nhập cả tiêu đề và nội dung thông báo")
         }
 
         setIsSending(true)
@@ -113,17 +86,10 @@ const FCM = () => {
             } else {
                 await sendFCMNotification(title, body)
             }
-            Swal.fire({
-                icon: 'success',
-                title: 'Thành công',
-                text: 'Đã gửi thông báo thành công',
-            })
+            successAlert("Gửi thông báo thành công")
         } catch (error) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Thất bại',
-                text: 'Có lỗi xảy ra khi gửi thông báo',
-            })
+            console.error(error)
+            errorAlert("Đã xảy ra lỗi nào đó")
         } finally {
             setIsSending(false);
         }

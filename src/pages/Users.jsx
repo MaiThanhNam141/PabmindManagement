@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import Swal from 'sweetalert2';
 import { db } from "../firebase/config";
 import { collection, getDocs, deleteDoc, doc, updateDoc, query, orderBy, limit, startAfter } from '@firebase/firestore';
 import { Edit, Trash, ChevronRight, ChevronLeft } from 'lucide-react';
@@ -8,8 +7,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { styles } from '../style/pagination';
 import EditUserForm from '../component/EditUserForm';
 import { motion } from 'framer-motion';
-import { confirmDelete } from '../component/ConfirmDelete';
-import { resolve } from 'chart.js/helpers';
+import { confirmDelete, successAlert } from '../component/SwalAlert';
 
 const Users = () => {
     const [users, setUsers] = useState([]);
@@ -67,6 +65,7 @@ const Users = () => {
             setTotalPages(totalPages);
 
         } catch (error) {
+            errorAlert("Lấy dữ liệu thất bại");
             console.error("Error fetching users: ", error);
         } finally {
             setLoading(false);
@@ -136,10 +135,10 @@ const Users = () => {
             const { id, ...data } = updatedData;
             await updateDoc(doc(db, "users", id), data);
             setUsers(prevUsers => prevUsers.map(user => user.id === id ? { ...user, ...data } : user));
-            Swal.fire('Thành công!', 'Cập nhật dữ liệu người dùng thành công', 'success');
+            successAlert('Cập nhật dữ liệu người dùng thành công')
         } catch (error) {
             console.error(error);
-            Swal.fire('Lỗi!', 'Không thể cập nhật user', 'error');
+            errorAlert("Không thể cập nhật user")
         }
     };
 
@@ -147,18 +146,10 @@ const Users = () => {
         try {
             await deleteDoc(doc(db, "users", id));
             setUsers(users.filter(u => u.id !== id));
-            Swal.fire({
-                title: "Xóa thành công!",
-                text: "Người dùng đã bị xóa.",
-                icon: "success",
-            });
+            successAlert("User đã được xóa thành công")
         } catch (error) {
             console.error("Lỗi khi xóa người dùng:", error);
-            Swal.fire({
-                title: "Thất bại",
-                text: "Đã xảy ra lỗi, vui lòng thử lại.",
-                icon: "error",
-            });
+            errorAlert("Không thể xóa người dùng");
         }
     }
 

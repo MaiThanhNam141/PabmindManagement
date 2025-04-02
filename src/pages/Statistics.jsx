@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { getAnalytics, logEvent, setUserId, setUserProperties } from "firebase/analytics";
 import { motion } from "framer-motion";
-import Swal from "sweetalert2";
 
 const Statistics = () => {
     const [visitorData, setVisitorData] = useState(null);
