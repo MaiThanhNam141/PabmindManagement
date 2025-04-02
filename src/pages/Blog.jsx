@@ -84,7 +84,7 @@ const Blog = () => {
       ]);
     } catch (error) {
       console.error(error);
-      errorAlert("Có lỗi xảy ra, vui lòng thử lại!")
+      throw Error;
     } finally {
       setIsSending(false);
       reNewState();

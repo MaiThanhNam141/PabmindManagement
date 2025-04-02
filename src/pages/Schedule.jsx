@@ -137,20 +137,20 @@ const Schedule = () => {
             try {
                 const newAppointment = {
                     ...formValues,
-                    consultationDate: Timestamp.fromDate(formValues.consultationDate),
                     time: Timestamp.fromDate(new Date()),
                 };
                 await addDoc(collection(db, "AdviseSchedule"), newAppointment);
                 successAlert('Thêm lịch hẹn thành công')
-                setAppointments((prev) => [...prev, newAppointment]);
+                setAppointments((prev) => [...prev, {...newAppointment, id: Math.random()}]);
             } catch (error) {
                 console.error("Error add appointment: ", error);
                 errorAlert("Không thể thêm lịch hẹn");
+                throw Error
             }
         }
         console.error("formValues:", formValues)
         errorAlert("Không thể thêm lịch hẹn");
-        return 0;
+        throw Error;
     };
 
     const handleInfo = (appointment) => {
@@ -162,21 +162,21 @@ const Schedule = () => {
             try {
                 const newAppointment = {
                     ...formValues,
-                    consultationDate: Timestamp.fromDate(formValues.consultationDate),
                     time: Timestamp.fromDate(new Date()),
                 };
 
                 await updateDoc(doc(db, "AdviseSchedule", newAppointment.id), newAppointment);
                 successAlert('Cập nhật lịch hẹn thành công')
                 setAppointments(appointments.map(item => item.id === newAppointment.id ? { ...item, ...newAppointment } : item));
+                return true;
             } catch (error) {
                 console.error("Error updating appointment: ", error);
-                errorAlert("Không thể cập nhật lịch hẹn")
+                errorAlert("Không thể cập nhật lịch hẹn");
+                throw Error;
             }
         }
-        console.error("formValues:", formValues)
         errorAlert("Không thể cập nhật lịch hẹn");
-        return 0;
+        throw Error;
     };
 
     const handleDelete = async (id) => {
@@ -217,11 +217,19 @@ const Schedule = () => {
     }
 
     const handleSubmit = (formValues = null) => {
-        if (selectAppointment) {
+        setIsModalOpen(false);
+        setSelectAppointment(null);
+
+        if (formValues.id) {
             handleEditAppointment(formValues);
         } else {
             handleAdd(formValues)
         }
+    }
+
+    const handleClose = () => {
+        setIsModalOpen(false);
+        setSelectAppointment(null);
     }
 
     return (
@@ -324,12 +332,16 @@ const Schedule = () => {
                     <ChevronRight size={25} />
                 </button>
             </div>
-            <AppointmentModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSubmit={handleSubmit}
-                initState={selectAppointment}
-            />
+            {
+                isModalOpen &&
+                <AppointmentModal
+                    isOpen={isModalOpen}
+                    onClose={handleClose}
+                    onSubmit={handleSubmit}
+                    initState={selectAppointment}
+                />
+            }
+
         </div>
     );
 };

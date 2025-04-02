@@ -1,104 +1,148 @@
-import { motion } from "framer-motion";
-import { X } from "lucide-react";
-import { useState } from "react";
-import styles from "../style/add-appointment.styles.module.css";
+import { Modal, Input, Form, DatePicker, Row, Col, Card, TimePicker, Select } from "antd";
+import { useEffect, useState } from "react";
+import dayjs from "dayjs";
+import { confirmAdd, confirmExit } from "./SwalAlert";
+import { Timestamp } from "@firebase/firestore";
+
+const { Option } = Select;
 
 const AppointmentModal = ({ isOpen, onClose, onSubmit, initState = null }) => {
-	const [formData, setFormData] = useState(() => {
-		return initState ? {
-			displayName: initState.displayName || "không có dữ liệu",
-			phone: initState.phone || "không có dữ liệu",
-			address: initState.address || "không có dữ liệu",
-			email: initState.email || "không có dữ liệu",
-			servicePackage: initState.servicePackage || "không có dữ liệu",
-			topic: initState.topic || "không có dữ liệu",
-			adviseDirect: initState.adviseDirect || "không có dữ liệu",
-			age: initState.age || "không có dữ liệu",
-			consultationDate: initState.consultationDate || "không có dữ liệu",
-			consultationTime: initState.consultationTime || "không có dữ liệu",
-		}: {
-			displayName: "",
-			phone: "",
-			address: "",
-			email: "",
-			servicePackage: "",
-			topic: "",
-			adviseDirect: "",
-			age: "",
-			consultationDate: "",
-			consultationTime: "",
-		};
-	});
+	const [form] = Form.useForm();
+	const [isDirty, setIsDirty] = useState(false);
+	const [recordId, setRecordId] = useState(null);
 
-	const handleChange = (e) => {
-		const { name, value } = e.target;
-		setFormData((prev) => ({ ...prev, [name]: value }));
+	useEffect(() => {
+		if (initState) {
+			const { id, consultationDate } = initState;
+
+			setRecordId(id || null);
+
+			const dateValue = consultationDate ? dayjs.unix(consultationDate.seconds) : null;
+			const timeValue = dateValue ? dayjs(dateValue.format("HH:mm"), "HH:mm") : null;
+
+			form.setFieldsValue({
+				...initState,
+				consultationDate: dateValue,
+				consultationTime: timeValue,
+			});
+		} else {
+			form.resetFields();
+			setRecordId(null);
+		}
+		setIsDirty(false);
+	}, [initState, isOpen, form]);
+
+	const saveForm = async () => {
+		try {
+			const values = await form.validateFields();
+			const { consultationDate, consultationTime, ...restValues } = values;
+
+			let timestamp = null;
+			if (consultationDate && consultationTime) {
+				const combinedDateTime = consultationDate
+					.hour(consultationTime.hour())
+					.minute(consultationTime.minute());
+
+				timestamp = Timestamp.fromDate(combinedDateTime.toDate());
+			}
+
+			const formattedData = {
+				...restValues,
+				consultationDate: timestamp
+			};
+
+			return onSubmit(initState ? {...formattedData, id: recordId} : { ...formattedData, time: new Date()});
+		} catch (error) {
+			console.log("Validation failed:", error);
+			throw Error;
+		}
 	};
 
-	const handleSave = () => {
-		if (!formData.consultationDate || !formData.consultationTime) return;
-		const consultationDate = new Date(
-			`${formData.consultationDate}T${formData.consultationTime}:00`
-		);
+	const handleClose = () => {
+		if (!isDirty) {
+			onClose();
+			return;
+		}
 
-		onSubmit({
-			...formData,
-			consultationDate,
-			time: new Date(),
-		});
-
-		onClose(); // Đóng modal sau khi lưu
+		confirmExit(onClose);
 	};
-
-	if (!isOpen) return null;
 
 	return (
-		<div className={styles.overlay}>
-			<motion.div
-				initial={{ opacity: 0, y: -50 }}
-				animate={{ opacity: 1, y: 0 }}
-				exit={{ opacity: 0, y: -50 }}
-				className={styles.modal}
-			>
-				<div className={styles.header}>
-					<h2>Thông tin lịch hẹn</h2>
-					<button onClick={onClose} className={styles.closeBtn}>
-						<X size={20} />
-					</button>
-				</div>
+		<Modal open={isOpen} onCancel={handleClose} onOk={() => confirmAdd(saveForm)} title="Thông tin lịch hẹn" okText="Lưu" cancelText="Hủy" width={800} centered>
+			<Card style={{ background: "#f9f9f9", borderRadius: 8, padding: 16 }}>
+				<Form form={form} layout="vertical" onValuesChange={() => setIsDirty(true)}>
+					<Row gutter={[4, 2]}>
+						<Col span={12}>
+							<Form.Item label="Tên khách hàng" name="displayName" rules={[{ required: true, message: "Vui lòng nhập tên" }]} style={{ marginBottom: 8 }}>
+								<Input placeholder="Nhập tên khách hàng" />
+							</Form.Item>
+						</Col>
 
-				<div className={styles.form}>
-					<Input label="Tên khách hàng" name="displayName" value={formData.displayName} onChange={handleChange} />
-					<Input label="Số điện thoại" name="phone" value={formData.phone} onChange={handleChange} />
-					<Input label="Địa chỉ" name="address" value={formData.address} onChange={handleChange} />
-					<Input label="Email" name="email" value={formData.email} onChange={handleChange} />
-					<Input label="Gói dịch vụ" name="servicePackage" value={formData.servicePackage} onChange={handleChange} />
-					<Input label="Chủ đề" name="topic" value={formData.topic} onChange={handleChange} />
-					<Input label="Hình thức tư vấn" name="adviseDirect" value={formData.adviseDirect} onChange={handleChange} />
-					<Input label="Tuổi" name="age" value={formData.age} onChange={handleChange} type="number" />
-					<Input label="Ngày tư vấn" name="consultationDate" value={formData.consultationDate} onChange={handleChange} type="date" />
-					<Input label="Giờ tư vấn" name="consultationTime" value={formData.consultationTime} onChange={handleChange} type="time" />
-				</div>
+						<Col span={12}>
+							<Form.Item label="Số điện thoại" name="phone" rules={[{ required: true, message: "Vui lòng nhập số điện thoại" }]} style={{ marginBottom: 8 }}>
+								<Input placeholder="Nhập số điện thoại" />
+							</Form.Item>
+						</Col>
 
-				<div className={styles.footer}>
-					<button onClick={onClose} className={styles.cancelBtn}>Hủy</button>
-					<button onClick={handleSave} className={styles.saveBtn}>Lưu</button>
-				</div>
-			</motion.div>
-		</div>
+						<Col span={12}>
+							<Form.Item label="Email" name="email" rules={[{ type: "email", message: "Email không hợp lệ" }]} style={{ marginBottom: 8 }}>
+								<Input placeholder="Nhập email" />
+							</Form.Item>
+						</Col>
+
+						<Col span={12}>
+							<Form.Item label="Tuổi" name="age" rules={[{ required: true, message: "Vui lòng nhập tuổi" }]} style={{ marginBottom: 8 }}>
+								<Input type="number" placeholder="Nhập tuổi" />
+							</Form.Item>
+						</Col>
+
+						<Col span={24}>
+							<Form.Item label="Địa chỉ" name="address" style={{ marginBottom: 8 }}>
+								<Input placeholder="Nhập địa chỉ" />
+							</Form.Item>
+						</Col>
+
+						<Col span={12}>
+							<Form.Item label="Gói dịch vụ" name="servicePackage" rules={[{ required: true, message: "Vui lòng chọn gói dịch vụ" }]} style={{ marginBottom: 8 }}>
+								<Select placeholder="Chọn gói dịch vụ">
+									<Option value="Basic">Basic</Option>
+									<Option value="Medium">Medium</Option>
+									<Option value="Premium">Premium</Option>
+								</Select>
+							</Form.Item>
+						</Col>
+
+						<Col span={12}>
+							<Form.Item label="Chủ đề" name="topic" style={{ marginBottom: 8 }}>
+								<Input placeholder="Nhập chủ đề" />
+							</Form.Item>
+						</Col>
+
+						<Col span={12}>
+							<Form.Item label="Hình thức tư vấn" name="adviseDirect" rules={[{ required: true, message: "Vui lòng chọn hình thức tư vấn" }]} style={{ marginBottom: 8 }}>
+								<Select placeholder="Chọn hình thức tư vấn">
+									<Option value="Tư vấn online">Tư vấn online</Option>
+									<Option value="Tư vấn trực tiếp">Tư vấn trực tiếp</Option>
+								</Select>
+							</Form.Item>
+						</Col>
+
+						<Col span={12}>
+							<Form.Item label="Ngày tư vấn" name="consultationDate" rules={[{ required: true, message: "Vui lòng chọn ngày" }]} style={{ marginBottom: 8 }}>
+								<DatePicker format="YYYY-MM-DD" style={{ width: "100%" }} />
+							</Form.Item>
+						</Col>
+
+						<Col span={12}>
+							<Form.Item label="Giờ tư vấn" name="consultationTime" rules={[{ required: true, message: "Vui lòng chọn giờ" }]} style={{ marginBottom: 8 }}>
+								<TimePicker format="HH:mm" style={{ width: "100%" }} />
+							</Form.Item>
+						</Col>
+					</Row>
+				</Form>
+			</Card>
+		</Modal>
 	);
 };
-
-const Input = ({ label, name, value, onChange, type = "text" }) => (
-	<div className={styles.inputGroup}>
-		<label>{label}</label>
-		<input
-			type={type}
-			name={name}
-			value={value}
-			onChange={onChange}
-		/>
-	</div>
-);
 
 export default AppointmentModal;

@@ -68,10 +68,10 @@ export const confirmDelete = async (id, name, fn) => {
 export const confirmAdd = async (fn) => {
 	const result = await Swal.fire({
 		title: `Xác nhận thêm?`,
-		icon: 'question',
+		icon: "question",
 		showCancelButton: true,
-		confirmButtonText: 'Thêm',
-		cancelButtonText: 'Hủy',
+		confirmButtonText: "Thêm",
+		cancelButtonText: "Hủy",
 	});
 
 	if (result.isConfirmed) {
@@ -83,9 +83,42 @@ export const confirmAdd = async (fn) => {
 				Swal.showLoading();
 			},
 		});
-		await fn();
+
+		try {
+			await fn();
+			Swal.fire({
+				title: "Thành công!",
+				text: "Dữ liệu đã được thêm thành công.",
+				icon: "success",
+				showConfirmButton: false,
+			});
+		} catch (error) {
+			console.error("Lỗi khi thêm dữ liệu:", error);
+			Swal.fire({
+				title: "Lỗi!",
+				text: "Có lỗi xảy ra, vui lòng thử lại.",
+				icon: "error",
+				confirmButtonText: "OK",
+			});
+		}
 	}
 };
+
+
+export const confirmExit = async (fn) => {
+	const result = await Swal.fire({
+		title: "Xác nhận thoát",
+		text: "Bạn có thay đổi chưa lưu. Bạn có chắc chắn muốn thoát?",
+		icon: "warning",
+		showCancelButton: true,
+		confirmButtonText: "Thoát",
+		cancelButtonText: "Hủy",
+	});
+
+	if (result.isConfirmed) {
+		await fn();
+	}
+}
 
 export const successAlert = (message) => {
 	Swal.fire('Thành công', message, 'success');
