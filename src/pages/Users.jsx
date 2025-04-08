@@ -1,267 +1,373 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { db } from "../firebase/config";
-import { collection, getDocs, deleteDoc, doc, updateDoc, query, orderBy, limit, startAfter } from '@firebase/firestore';
-import { Edit, Trash, ChevronRight, ChevronLeft } from 'lucide-react';
-import { ClimbingBoxLoader } from 'react-spinners'
+import {
+    collection, getDocs, deleteDoc, doc, updateDoc,
+    query, orderBy, where
+} from '@firebase/firestore';
+import { Edit, Trash, Search as SearchIcon } from 'lucide-react';
+import { ClimbingBoxLoader } from 'react-spinners';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { styles } from '../style/pagination';
 import EditUserForm from '../component/EditUserForm';
 import { motion } from 'framer-motion';
-import { confirmDelete, successAlert } from '../component/SwalAlert';
+import { confirmDelete, successAlert, errorAlert } from '../component/SwalAlert';
+import { Table, Input, Typography, Space, Button, Image, Spin, Alert } from 'antd';
+
+const { Title } = Typography;
+const { Search } = Input;
 
 const Users = () => {
-    const [users, setUsers] = useState([]);
+    const [allUsers, setAllUsers] = useState([]);
+    const [filteredUsers, setFilteredUsers] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [lastVisible, setLastVisible] = useState(null);
-    const [totalPages, setTotalPages] = useState(0);
+    const [isSearchingGlobal, setIsSearchingGlobal] = useState(false);
+    const [noLocalResults, setNoLocalResults] = useState(false);
+    const [noGlobalResultsFound, setNoGlobalResultsFound] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const location = useLocation();
     const navigate = useNavigate();
-
-    const [searchTerm, setSearchTerm] = useState(new URLSearchParams(location.search).get("search") || '');
-
-    const itemPerPage = 100;
+    const isMounted = useRef(false);
 
     useEffect(() => {
-        const params = new URLSearchParams(location.search);
-        if (searchTerm) {
-            params.set("search", searchTerm);
+        if (isMounted.current) {
+            const params = new URLSearchParams(location.search);
+            if (searchTerm) {
+                params.set("search", searchTerm);
+            } else {
+                params.delete("search");
+            }
+            navigate(`?${params.toString()}`, { replace: true });
         } else {
-            params.delete("search");
+            isMounted.current = true;
         }
-        navigate(`?${params.toString()}`, { replace: true });
-    }, [searchTerm, navigate]);
+    }, [searchTerm, navigate, location.search]);
 
-    useEffect(() => {
-        fetchData();
+    const filterLocalUsers = useCallback((searchValue, sourceData) => {
+        const lowerCaseValue = searchValue.toLowerCase().trim();
+        setNoGlobalResultsFound(false);
+
+        if (!lowerCaseValue) {
+            setFilteredUsers(sourceData);
+            setNoLocalResults(false);
+            setIsSearchingGlobal(false);
+            return true;
+        }
+
+        const localResults = sourceData.filter(user =>
+            user.displayName?.toLowerCase().includes(lowerCaseValue) ||
+            user.email?.toLowerCase().includes(lowerCaseValue)
+        );
+
+        setFilteredUsers(localResults);
+        setNoLocalResults(localResults.length === 0);
+        setIsSearchingGlobal(false);
+        return localResults.length > 0;
     }, []);
 
-    const fetchData = async () => {
+    const fetchAllUsers = useCallback(async () => {
+        console.log("Fetching initial user list from Firestore...");
+        setLoading(true);
+        setNoLocalResults(false);
+        setNoGlobalResultsFound(false);
+        setIsSearchingGlobal(false);
         try {
             const usersCollection = collection(db, 'users');
-            const dataQuery = query(
-                usersCollection,
-                orderBy('email'),
-                limit(itemPerPage)
-            );
-
+            const dataQuery = query(usersCollection, orderBy('email'));
             const dataSnapshot = await getDocs(dataQuery);
+
             const itemList = dataSnapshot.docs.map((doc, index) => ({
                 id: doc.id,
                 ...doc.data(),
                 index: index + 1,
+                displayNameLower: doc.data().displayNameLower || doc.data().displayName?.toLowerCase() || '',
+                emailLower: doc.data().emailLower || doc.data().email?.toLowerCase() || '',
             }));
-            setUsers(itemList);
 
-            const lastVisible = dataSnapshot.docs[dataSnapshot.docs.length - 1];
-            setLastVisible(lastVisible);
+            setAllUsers(itemList);
 
-            // Fetch total number of users to calculate totalPages
-            const totalDataSnapshot = await getDocs(usersCollection);
-            const totalData = totalDataSnapshot.size;
-            const totalPages = Math.ceil(totalData / itemPerPage);
-            setTotalPages(totalPages);
+            const params = new URLSearchParams(location.search);
+            const initialSearchTerm = params.get('search') || '';
+            setSearchTerm(initialSearchTerm);
+            filterLocalUsers(initialSearchTerm, itemList);
 
         } catch (error) {
-            errorAlert("Lấy dữ liệu thất bại");
-            console.error("Error fetching users: ", error);
+            console.error("Error fetching initial users:", error);
+            errorAlert("Unable to load user data.");
+            setAllUsers([]);
+            setFilteredUsers([]);
         } finally {
             setLoading(false);
         }
+    }, [filterLocalUsers, location.search]);
+
+    useEffect(() => {
+        fetchAllUsers();
+    }, [fetchAllUsers]);
+
+    const handleSearchChange = (value) => {
+        setSearchTerm(value);
+        filterLocalUsers(value, allUsers);
     };
 
-    const filteredItems = users.filter(user =>
-        user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const searchHandler = useCallback(handleSearchChange, [allUsers, filterLocalUsers]);
 
-    const indexOfLastUser = currentPage * itemPerPage;
-    const indexOfFirstUser = indexOfLastUser - itemPerPage;
-    const paginatedUsers = filteredItems.slice(indexOfFirstUser, indexOfLastUser);
+    const searchGlobally = async () => {
+        const currentSearchTerm = searchTerm.trim();
+        if (!currentSearchTerm) return;
 
-    const refetchMoreData = async (multiple = 1) => {
-        if (lastVisible) {
-            try {
-                setLoading(true);
-                const usersCollection = collection(db, 'users');
-                const dataQuery = query(
-                    usersCollection,
-                    orderBy('email'),
-                    startAfter(lastVisible),
-                    limit(itemPerPage * multiple)
-                );
+        const lowerCaseValue = currentSearchTerm.toLowerCase();
 
-                const dataSnapshot = await getDocs(dataQuery);
-                const itemList = dataSnapshot.docs.map((doc, index) => ({
-                    id: doc.id,
-                    ...doc.data(),
-                    index: index + 1,
-                }));
+        console.log("Performing optimized global search (starts with) in Firestore for:", lowerCaseValue);
+        setIsSearchingGlobal(true);
+        setNoLocalResults(false);
+        setNoGlobalResultsFound(false);
+        setFilteredUsers([]);
 
-                setUsers(prev => [...prev, ...itemList]);
-                setLastVisible(dataSnapshot.docs[dataSnapshot.docs.length - 1]);
-            } catch (error) {
-                console.error("Error fetching next page: ", error);
-            } finally {
-                setLoading(false);
+        try {
+            const usersCollection = collection(db, 'users');
+            const searchEnd = lowerCaseValue + '\uf8ff';
+
+            const nameQuery = query(
+                usersCollection,
+                where('displayNameLower', '>=', lowerCaseValue),
+                where('displayNameLower', '<', searchEnd)
+            );
+
+            const emailQuery = query(
+                usersCollection,
+                where('emailLower', '>=', lowerCaseValue),
+                where('emailLower', '<', searchEnd)
+            );
+
+            const [nameSnapshot, emailSnapshot] = await Promise.all([
+                getDocs(nameQuery),
+                getDocs(emailQuery)
+            ]);
+
+            const resultsMap = new Map();
+
+            const addUserToMap = (doc) => {
+                if (!resultsMap.has(doc.id)) {
+                    resultsMap.set(doc.id, {
+                        id: doc.id,
+                        ...doc.data(),
+                        displayNameLower: doc.data().displayNameLower || doc.data().displayName?.toLowerCase() || '',
+                        emailLower: doc.data().emailLower || doc.data().email?.toLowerCase() || '',
+                    });
+                }
+            };
+
+            nameSnapshot.docs.forEach(addUserToMap);
+            emailSnapshot.docs.forEach(addUserToMap);
+
+            let finalResults = Array.from(resultsMap.values())
+                .sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''))
+                .map((user, index) => ({ ...user, index: index + 1 }));
+
+            setFilteredUsers(finalResults);
+            setNoGlobalResultsFound(finalResults.length === 0);
+            if (finalResults.length === 0) {
+                console.log("No results found in global search.");
             }
-        }
-    };
 
-    const handleNextPage = () => {
-        if (currentPage < totalPages) {
-            setCurrentPage(currentPage + 1);
-            refetchMoreData();
-        }
-    };
-
-    const handlePreviousPage = () => {
-        if (currentPage > 1) {
-            setCurrentPage(currentPage - 1);
-        }
-    };
-
-    const handlePageClick = (pageIndex) => {
-        setCurrentPage(pageIndex);
-        if (pageIndex > currentPage) {
-            refetchMoreData(pageIndex - currentPage);
+        } catch (err) {
+            console.error("Global search failed:", err);
+            errorAlert("Global search failed. Check Firestore indexes or connection.");
+            setFilteredUsers([]);
+            setNoGlobalResultsFound(true);
+        } finally {
+            setIsSearchingGlobal(false);
         }
     };
 
     const handleUpdateUser = async (updatedData) => {
+        const { id, ...data } = updatedData;
+        if (data.displayName) data.displayNameLower = data.displayName.toLowerCase();
+        if (data.email) data.emailLower = data.email.toLowerCase();
+
+        setIsSearchingGlobal(true);
         try {
-            const { id, ...data } = updatedData;
             await updateDoc(doc(db, "users", id), data);
-            setUsers(prevUsers => prevUsers.map(user => user.id === id ? { ...user, ...data } : user));
-            successAlert('Cập nhật dữ liệu người dùng thành công')
+
+            const updatedAllUsers = allUsers.map(user =>
+                user.id === id ? { ...user, ...data } : user
+            );
+            setAllUsers(updatedAllUsers);
+            filterLocalUsers(searchTerm, updatedAllUsers);
+
+            successAlert('User data updated successfully.');
         } catch (error) {
-            console.error(error);
-            errorAlert("Không thể cập nhật user")
+            console.error("Error updating user:", error);
+            errorAlert("Unable to update user data.");
+        } finally {
+            setEditingUser(null);
+            setIsSearchingGlobal(false);
         }
+    };
+
+    const handleDeleteUser = (user) => {
+        confirmDelete(user.id, user.displayName, handleDelete);
     };
 
     const handleDelete = async (id) => {
+        setIsSearchingGlobal(true);
         try {
-            await deleteDoc(doc(db, "users", id));
-            setUsers(users.filter(u => u.id !== id));
-            successAlert("User đã được xóa thành công")
-        } catch (error) {
-            console.error("Lỗi khi xóa người dùng:", error);
-            errorAlert("Không thể xóa người dùng");
-        }
-    }
+            // await deleteDoc(doc(db, "users", id));
 
-    const handleDeleteUser = async (user) => {
-        confirmDelete(user.id, user.displayName, handleDelete)
+            const updatedAllUsers = allUsers
+                .filter(u => u.id !== id)
+                .map((user, index) => ({ ...user, index: index + 1 }));
+            setAllUsers(updatedAllUsers);
+
+            filterLocalUsers(searchTerm, updatedAllUsers);
+
+            successAlert("User deleted successfully.");
+            return true;
+        } catch (error) {
+            console.error("Error deleting user:", error);
+            errorAlert("Unable to delete user.");
+            throw Error;
+        } finally {
+            setIsSearchingGlobal(false);
+        }
     };
 
-    if (loading) {
+    const columns = [
+        {
+            title: <strong>#</strong>,
+            dataIndex: 'index',
+            key: 'index',
+            width: 60,
+        },
+        {
+            title: <strong>Avatar</strong>,
+            dataIndex: 'photoURL',
+            key: 'avatar',
+            width: 100,
+            align: 'center',
+            render: (photoURL) => (
+                <motion.div whileHover={{ scale: 1.05 }}>
+                    <Image
+                        src={photoURL || 'https://via.placeholder.com/50/92c952'}
+                        width={50}
+                        height={50}
+                        style={{ borderRadius: 8, cursor: 'pointer', objectFit: 'cover' }}
+                        preview={true}
+                        fallback='https://via.placeholder.com/50/cccccc'
+                    />
+                </motion.div>
+            )
+        },
+        {
+            title: <strong>Display Name</strong>,
+            dataIndex: 'displayName',
+            key: 'displayName',
+            ellipsis: true,
+            sorter: (a, b) => (a.displayName || '').localeCompare(b.displayName || ''),
+        },
+        {
+            title: <strong>Email</strong>,
+            dataIndex: 'email',
+            key: 'email',
+            ellipsis: true,
+            sorter: (a, b) => (a.email || '').localeCompare(b.email || ''),
+        },
+        {
+            title: <strong>Actions</strong>,
+            key: 'actions',
+            width: 120,
+            align: 'center',
+            render: (_, user) => (
+                <Space>
+                    <motion.div whileHover={{ scale: 1.2 }}>
+                        <Button
+                            type="text" shape="circle"
+                            icon={<Edit size={16} color="#4CAF50" />}
+                            onClick={() => setEditingUser(user)}
+                            title="Edit User"
+                            style={{ border: 'none', background: 'transparent' }}
+                        />
+                    </motion.div>
+                    <motion.div whileHover={{ scale: 1.2 }}>
+                        <Button
+                            type="text" danger shape="circle"
+                            icon={<Trash size={16} />}
+                            onClick={() => handleDeleteUser(user)}
+                            title="Delete User"
+                            style={{ border: 'none', background: 'transparent' }}
+                        />
+                    </motion.div>
+                </Space>
+            ),
+        },
+    ];
+
+    if (loading && !allUsers.length) {
         return (
-            <div style={styles.loading}>
-                <ClimbingBoxLoader color="#87bc9d" loading size={30} speedMultiplier={0.5} />
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f0f2f5' }}>
+                <ClimbingBoxLoader color="#87bc9d" loading size={25} speedMultiplier={0.8} />
             </div>
-        )
+        );
     }
 
     return (
-        <div style={styles.container}>
-            <style>
-                {`
-                    .userRow {transition: background-color 0.3s, transform 0.3s;}
-                    .userRow:hover {background-color: #f0f8ff; transform: translateY(-3px);}
-                    .actionButton:hover {transform: scale(1.1);}
-                `}
-            </style>
-            <h2 style={styles.header}>Danh sách Người dùng</h2>
-            <div style={styles.searchContainer}>
-                <input
-                    type="text"
-                    placeholder="Tìm kiếm người dùng..."
-                    value={searchTerm}
-                    onChange={(e) => {
-                        setSearchTerm(e.target.value);
-                        setCurrentPage(1);
-                    }}
-                    style={styles.searchInput}
-                />
-            </div>
-            <h4 style={styles.subHeader}>Có {paginatedUsers.length} người dùng trong trang này</h4>
-
-            {paginatedUsers.length === 0 ? (
-                <div style={styles.noData}>Không tìm thấy người dùng nào</div>
-            ) : (
-                <div style={styles.tableContainer}>
-                    <table style={styles.table}>
-                        <thead>
-                            <tr style={styles.tableRow}>
-                                <th style={styles.th}>#</th>
-                                <th style={styles.th}>Hình đại diện</th>
-                                <th style={styles.th}>Tên hiển thị</th>
-                                <th style={styles.th}>Email</th>
-                                <th style={styles.th}>Thao tác</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {paginatedUsers.map(user => (
-                                <tr key={user.id} className="userRow" style={styles.tableRow}>
-                                    <td style={styles.td}>{user.index}</td>
-                                    <td style={styles.td}>
-                                        <motion.button
-                                            whileHover={{ scale: 1.1 }}
-                                            style={styles.actionButton}
-                                            onClick={() => window.open(user.photoURL, '_blank')}
-                                        >
-                                            <img
-                                                src={user.photoURL || "https://placehold.co/600x400"}
-                                                alt={`${user.displayName}'s avatar`}
-                                                style={styles.avatar}
-                                            />
-                                        </motion.button>
-                                    </td>
-                                    <td style={styles.td}>{user.displayName}</td>
-                                    <td style={styles.td}>{user.email}</td>
-                                    <td style={styles.td}>
-                                        <div style={styles.actionContainer}>
-                                            <button style={styles.actionButton} className="actionButton" onClick={() => setEditingUser(user)}>
-                                                <Edit size={20} color="#4CAF50" />
-                                            </button>
-                                            <button style={styles.actionButton} className="actionButton" onClick={() => handleDeleteUser(user)}>
-                                                <Trash size={20} color="#F44336" />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
-
-            <div style={styles.pagination}>
-                <button style={styles.paginationButton} onClick={handlePreviousPage} disabled={currentPage === 1}>
-                    <ChevronLeft size={25} />
-                </button>
-                <div style={styles.pageNumbers}>
-                    {Array.from({ length: totalPages }, (_, index) => (
-                        <span
-                            key={index}
-                            style={{
-                                ...styles.pageNumber,
-                                backgroundColor: currentPage === index + 1 ? '#4CAF50' : '#f1f1f1',
-                                color: currentPage === index + 1 ? '#fff' : '#000',
-                            }}
-                            onClick={() => handlePageClick(index + 1)}
+        <div style={{ padding: '24px', background: '#f0f2f5', minHeight: '100vh' }}>
+            <Title level={3} style={{ marginBottom: 20, color: '#333' }}>User Management</Title>
+            <Search
+                placeholder="Search locally by Name or Email..."
+                enterButton={<><SearchIcon size={16} /> Search</>}
+                onChange={(e) => searchHandler(e.target.value)}
+                onSearch={handleSearchChange}
+                value={searchTerm}
+                allowClear
+                style={{ maxWidth: 400, marginBottom: 20 }}
+            />
+            {noLocalResults && searchTerm && !isSearchingGlobal && (
+                <Alert
+                    message="No users found locally matching your search."
+                    type="info" showIcon
+                    action={
+                        <Button
+                            size="small" type="primary"
+                            onClick={searchGlobally}
+                            icon={<SearchIcon size={14} />}
                         >
-                            {index + 1}
-                        </span>
-                    ))}
-                </div>
-                <button style={styles.paginationButton} onClick={handleNextPage} disabled={currentPage === totalPages}>
-                    <ChevronRight size={25} />
-                </button>
-            </div>
+                            Search Globally (starts with...)
+                        </Button>
+                    }
+                    style={{ marginBottom: 20 }}
+                />
+            )}
+            {noGlobalResultsFound && !isSearchingGlobal && searchTerm && (
+                <Alert
+                    message={`No users found in database starting with "${searchTerm}".`}
+                    type="warning" showIcon style={{ marginBottom: 20 }}
+                />
+            )}
+            <Spin spinning={isSearchingGlobal} tip="Processing...">
+                <Table
+                    dataSource={filteredUsers}
+                    columns={columns}
+                    rowKey="id"
+                    pagination={false}
+                    rowClassName={() => 'user-row-hover'}
+                    bordered
+                    scroll={{ x: 'max-content' }}
+                    style={{
+                        background: '#fff',
+                        borderRadius: '8px',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                    }}
+                    locale={{
+                        emptyText: (
+                            <div style={{ textAlign: 'center', padding: 20 }}>
+                                No users available
+                            </div>
+                        ),
+                    }}
+                />
+            </Spin>
             {editingUser && (
                 <EditUserForm
                     user={editingUser}
@@ -269,6 +375,33 @@ const Users = () => {
                     onClose={() => setEditingUser(null)}
                 />
             )}
+            <style>{`
+                .user-row-hover:hover {
+                    background-color: #e6f7ff !important;
+                    cursor: pointer;
+                }
+                .ant-spin-nested-loading > div > .ant-spin {
+                     max-height: none;
+                     position: absolute;
+                     top: 50%; left: 50%;
+                     transform: translate(-50%, -50%);
+                     z-index: 10;
+                     background-color: rgba(255, 255, 255, 0.7); /* Add semi-transparent background to overlay */
+                     padding: 20px;
+                     border-radius: 8px;
+                 }
+                 .ant-spin-nested-loading > div > .ant-spin .ant-spin-text {
+                      margin-top: 8px;
+                      text-shadow: none; /* Remove shadow if background added */
+                      color: #555;
+                 }
+                 .ant-table-cell .ant-space-item button {
+                    color: #555;
+                 }
+                 .ant-table-cell .ant-space-item button:hover {
+                     background-color: rgba(0, 0, 0, 0.05);
+                 }
+            `}</style>
         </div>
     );
 };

@@ -39,7 +39,26 @@ export const confirmSendNotification = async (title, body, token = "", fn) => {
 				Swal.showLoading();
 			},
 		});
-		await fn();
+		try {
+			await fn();
+			Swal.fire({
+				title: "Thành công!",
+				text: "Gửi thông báo thành công.",
+				icon: "success",
+				showConfirmButton: false,
+				timer: 1000
+			});
+		} catch (error) {
+			console.error("Lỗi khi Gửi thông báo:", error);
+			Swal.fire({
+				title: "Lỗi!",
+				text: "Có lỗi xảy ra, vui lòng thử lại.",
+				icon: "error",
+				confirmButtonText: "OK",
+			});
+		} finally {
+            Swal.hideLoading();
+        }
 	}
 }
 
@@ -61,7 +80,26 @@ export const confirmDelete = async (id, name, fn) => {
 				Swal.showLoading();
 			},
 		});
-		await fn(id);
+		try {
+			await fn(id);
+			Swal.fire({
+				title: "Thành công!",
+				text: "Dữ liệu đã được xóa thành công.",
+				icon: "success",
+				showConfirmButton: false,
+				timer: 1000
+			});
+		} catch (error) {
+			console.error("Lỗi khi thêm dữ liệu:", error);
+			Swal.fire({
+				title: "Lỗi!",
+				text: "Có lỗi xảy ra, vui lòng thử lại.",
+				icon: "error",
+				confirmButtonText: "OK",
+			});
+		} finally {
+            Swal.hideLoading();
+        }
 	}
 };
 
@@ -91,6 +129,7 @@ export const confirmAdd = async (fn) => {
 				text: "Dữ liệu đã được thêm thành công.",
 				icon: "success",
 				showConfirmButton: false,
+				timer: 1000
 			});
 		} catch (error) {
 			console.error("Lỗi khi thêm dữ liệu:", error);
@@ -100,6 +139,8 @@ export const confirmAdd = async (fn) => {
 				icon: "error",
 				confirmButtonText: "OK",
 			});
+		} finally {
+			Swal.hideLoading();
 		}
 	}
 };
