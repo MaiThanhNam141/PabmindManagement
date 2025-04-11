@@ -1,13 +1,8 @@
-import { createContext, useEffect, useReducer } from "react";
+import React, { useReducer, useEffect } from "react";
 import AuthReducer from "./AuthReducer";
+import { AuthContext, INITIAL_STATE } from "./AuthContextInstance";
 
-const INITIAL_STATE = {
-  currentUser: JSON.parse(localStorage.getItem("user")) || null,
-};
-
-export const AuthContext = createContext(INITIAL_STATE);
-
-export const AuthContextProvider = ({ children }) => {
+export const AuthContextProvider: React.FC<{ children: React.ReactNode }>  = ({ children }) => {
   const [state, dispatch] = useReducer(AuthReducer, INITIAL_STATE);
 
   useEffect(() => {

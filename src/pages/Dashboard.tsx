@@ -1,8 +1,8 @@
-import React, { useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
+import { useContext } from 'react';
+import { AuthContext } from "../context/AuthContextInstance";
 import { Link, Outlet } from 'react-router-dom';
 import Logo from "../assets/logo.png";
-import Sidebar from '../component/Sidebar';
+import Sidebar from '../component/Sidebar.tsx';
 import { auth } from "../firebase/config"
 import { signOut } from '@firebase/auth';
 import { motion } from "framer-motion";

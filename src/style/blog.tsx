@@ -1,4 +1,4 @@
-export const styles = {
+export const styles:{ [key: string]: React.CSSProperties } = {
 	container: {
 		width: '100%',
 		maxWidth: '900px',

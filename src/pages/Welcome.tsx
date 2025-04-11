@@ -1,14 +1,32 @@
 import { useContext, useEffect, useState } from "react";
-import { AuthContext } from "../context/AuthContext";
+import { AuthContext } from "../context/AuthContextInstance";
+
+interface User {
+    email: string;
+    role?: string;
+};
+
+interface WeatherData {
+    forecast: {
+        forecastday: Array<{
+            hour: Array<{
+                time: string;
+                temp_c: number;
+                condition: { text: string; icon: string };
+                time_epoch: number;
+            }>,
+        }>,
+    }
+}
 
 const API_KEY = import.meta.env.VITE_WEATHER_KEY;
 
 const Welcome = () => {
-    const { currentUser } = useContext(AuthContext);
-    const [weather, setWeather] = useState(null);
-    const [error, setError] = useState(null);
+    const { currentUser } = useContext(AuthContext) as { currentUser: User }
+    const [weather, setWeather] = useState<WeatherData | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
-    const username = currentUser.email.split("@")[0];
+    const username = currentUser?.email.split("@")[0];
     const currentHour = new Date().getHours();
     let greeting;
 
@@ -36,15 +54,19 @@ const Welcome = () => {
         }
     }, []);
 
-    const fetchWeather = async (lat, lon) => {
+    const fetchWeather = async (lat: number, lon: number) => {
         try {
             const response = await fetch(
                 `https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${lat},${lon}&hours=12&aqi=yes`
             );
             const data = await response.json();
             setWeather(data);
-        } catch (err) {
-            setError("Failed to fetch weather data.");
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                setError(`Failed to fetch weather data. ${err.message}`);
+            } else {
+                setError("Failed to fetch weather data due to an unknown error.");
+            }
         }
     };
 
@@ -92,14 +114,15 @@ const Welcome = () => {
     );
 };
 
-const styles = {
+const styles: { [key: string]: React.CSSProperties } = {
     container: {
         display: "flex",
-        flexDirection: "column",
         alignItems: "center",
         height: "100%",
         minHeight: "100vh",
         backgroundColor: "#f0f4f8",
+        flexDirection: "column",
+        justifyContent: "center",
     },
     card: {
         backgroundColor: "white",
@@ -165,7 +188,6 @@ const styles = {
     },
     weatherSection: {
         marginTop: "20px",
-        textAlign: "center",
     },
     weatherTitle: {
         fontSize: "20px",
@@ -176,16 +198,15 @@ const styles = {
     weatherContainer: {
         display: "flex",
         justifyContent: "space-around",
-        flexWrap: "wrap",
     },
     weatherCard: {
         backgroundColor: "#e3f2fd",
         padding: "10px",
         borderRadius: "8px",
-        textAlign: "center",
         width: "80px",
         margin: "5px",
-        color: '#000'
+        color: '#000',
+        textAlign: "center",
     },
     weatherIcon: {
         width: "40px",

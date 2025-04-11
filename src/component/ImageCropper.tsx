@@ -1,9 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
-import ReactCrop from 'react-image-crop';
+import { useState, useRef, useEffect } from 'react';
+import ReactCrop, { Crop } from 'react-image-crop';
 import { motion } from 'framer-motion';
 import 'react-image-crop/dist/ReactCrop.css';
 
-export const styles = {
+const styles:{ [key: string]: React.CSSProperties } = {
 	container: {
 		display: 'flex',
 		flexDirection: 'column',
@@ -52,11 +52,17 @@ export const styles = {
 	},
 };
 
-const ImageCropper = ({ src, onComplete, onCancel }) => {
-	const [crop, setCrop] = useState({ aspect: 390 / 200 });
-	const [completedCrop, setCompletedCrop] = useState(null);
-	const imageRef = useRef(null);
-	const previewCanvasRef = useRef(null);
+interface ImageCropperProps {
+	src: string;
+	onComplete: (blob: Blob) => void;
+	onCancel: () => void;
+}
+
+const ImageCropper = ({ src, onComplete, onCancel }: ImageCropperProps) => {
+	const [crop, setCrop] = useState<Crop>({ unit: 'px', width: 390, height: 200, x: 0, y: 0 });
+	const [completedCrop, setCompletedCrop] = useState<Crop | null>(null);
+	const imageRef = useRef<HTMLImageElement | null>(null);
+	const previewCanvasRef = useRef<HTMLCanvasElement>(null);
 
 	useEffect(() => {
 		if (!completedCrop || !previewCanvasRef.current || !imageRef.current) return;
@@ -66,6 +72,10 @@ const ImageCropper = ({ src, onComplete, onCancel }) => {
 		const scaleX = image.naturalWidth / image.width;
 		const scaleY = image.naturalHeight / image.height;
 		const ctx = canvas.getContext('2d');
+		if (!ctx) {
+			console.error('Không thể lấy được ngữ cảnh 2D từ canvas');
+			return;
+		}
 		canvas.width = crop.width * scaleX;
 		canvas.height = crop.height * scaleY;
 		ctx.drawImage(
@@ -88,8 +98,8 @@ const ImageCropper = ({ src, onComplete, onCancel }) => {
 				console.error('Không tạo được ảnh cắt');
 				return;
 			}
-			blob.name = 'cropped.jpg';
-			onComplete(blob);
+			const file = new File([blob], 'cropped.jpg', { type: 'image/jpeg' });
+			onComplete(file);
 		}, 'image/jpeg', 1.0);
 	};
 

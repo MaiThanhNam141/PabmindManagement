@@ -1,22 +1,53 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import "../style/EditUserForm.css";
 import Swal from "sweetalert2";
+import { Timestamp } from "@firebase/firestore";
 
-const convertTimestampToDateTimeLocal = (timestamp) => {
+interface GAD7 {
+    qIndex: number;
+    point: number;
+}
+
+interface User {
+    id: string;
+    displayName: string;
+    email: string;
+    startDateMember: Timestamp | null;
+    endDateMember: Timestamp | null;
+    eq: number;
+    age: number;
+    coin: number;
+    userType: string[];
+    DISCType: string;
+    phone: string;
+    address: string;
+    memberActive: boolean;
+    memberID: string;
+    photoURL: string;
+    GAD7CriticalPoint: GAD7[] | null;
+    token: string;
+    charity: number;
+    bmi: number;
+    essayComment: string;
+    BDIRateID: string;
+    GAD7Result: string;
+}
+
+const convertTimestampToDateTimeLocal = (timestamp: Timestamp) => {
     return timestamp ? new Date(timestamp.seconds * 1000).toISOString().slice(0, -1) : "";
 };
 
-const convertDateTimeLocalToTimestamp = (dateString) => {
-    return dateString ? { seconds: Math.floor(new Date(dateString).getTime() / 1000) } : null;
+const convertDateTimeLocalToTimestamp = (dateString: string) => {
+    return dateString ? Timestamp.fromDate(new Date(dateString)) : null;
 };
 
-const EditUserForm = ({ user, onSave, onClose }) => {
+const EditUserForm = ({ user, onSave, onClose }: { user: User; onSave: (data: User) => void; onClose: () => void }) => {
     const [formData, setFormData] = useState({
         id: user.id || "",
         displayName: user.displayName || "",
         email: user.email || "",
-        startDateMember: convertTimestampToDateTimeLocal(user.startDateMember),
-        endDateMember: convertTimestampToDateTimeLocal(user.endDateMember),
+        startDateMember: user.startDateMember? convertTimestampToDateTimeLocal(user.startDateMember) : null,
+        endDateMember: user.endDateMember ? convertTimestampToDateTimeLocal(user.endDateMember) : null,
         eq: user.eq || 0,
         age: user.age || 0,
         coin: user.coin || 0,
@@ -27,7 +58,7 @@ const EditUserForm = ({ user, onSave, onClose }) => {
         memberActive: user.memberActive || false,
         memberID: user.memberID || "",
         photoURL: user.photoURL || "",
-        GAD7CriticalPoint: user.GAD7CriticalPoint?.map((item) => `Câu ${item.qIndex + 1} ở mức ${item.point}`).join("\n") || "",
+        GAD7CriticalPoint: user.GAD7CriticalPoint?.map((item: GAD7) => `Câu ${item.qIndex + 1} ở mức ${item.point}`).join("\n") || "",
         token: user.token || "",
         charity: user.charity || 0,
         bmi: user.bmi || 0,
@@ -36,20 +67,21 @@ const EditUserForm = ({ user, onSave, onClose }) => {
         GAD7Result: user.GAD7Result || "",
     });
 
-    const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value, type, checked } = e.target as HTMLInputElement;
         setFormData({
             ...formData,
             [name]: type === "checkbox" ? checked : value,
         });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = (e: { preventDefault: () => void; }) => {
         e.preventDefault();
         const updatedData = {
             ...formData,
-            startDateMember: convertDateTimeLocalToTimestamp(formData.startDateMember),
-            endDateMember: convertDateTimeLocalToTimestamp(formData.endDateMember),
+            startDateMember: formData.startDateMember ? convertDateTimeLocalToTimestamp(formData.startDateMember) : null,
+            endDateMember: formData.endDateMember ? convertDateTimeLocalToTimestamp(formData.endDateMember) : null,
+            GAD7CriticalPoint: user.GAD7CriticalPoint || null,
         };
 
         if (!updatedData.memberActive && (updatedData.startDateMember || updatedData.endDateMember)) {
@@ -60,7 +92,7 @@ const EditUserForm = ({ user, onSave, onClose }) => {
             Swal.fire('error', 'Bạn cần nhập đầy đủ ngày bắt đầu và ngày kết thúc thẻ thành viên', 'error');
             return false;
         }
-        if (updatedData.memberActive && (new Date(formData.startDateMember) > new Date(formData.endDateMember))) {
+        if (updatedData.memberActive && formData.startDateMember && formData.endDateMember && (new Date(formData.startDateMember) > new Date(formData.endDateMember))) {
             Swal.fire('error', 'Ngày bắt đầu không được lớn hơn ngày kết thúc', 'error');
             return false;
         }
@@ -69,14 +101,14 @@ const EditUserForm = ({ user, onSave, onClose }) => {
         onClose();
     };
 
-    const handleClose = (e) => {
-        if (e.target.classList.contains('modal-overlay')) {
+    const handleClose = (e: React.MouseEvent<HTMLElement>) => {
+        if ((e.target as HTMLElement).classList.contains('modal-overlay')) {
             onClose();
         }
     };
 
-    const removeUserType = (index) => {
-        const updatedUserType = formData.userType.filter((_, i) => i !== index);
+    const removeUserType = (index: number) => {
+        const updatedUserType = formData.userType.filter((_: string, i: number) => i !== index);
         setFormData({ ...formData, userType: updatedUserType });
     };
 
@@ -131,11 +163,11 @@ const EditUserForm = ({ user, onSave, onClose }) => {
                         </div>
                         <div className="input-group">
                             <label>Ngày bắt đầu thành viên (Không thể sửa)</label>
-                            <input type="datetime-local" name="startDateMember" value={formData.startDateMember} disabled />
+                            <input type="datetime-local" name="startDateMember" value={formData.startDateMember || ""} disabled />
                         </div>
                         <div className="input-group">
                             <label>Ngày kết thúc thành viên</label>
-                            <input type="datetime-local" name="endDateMember" value={formData.endDateMember} onChange={handleChange} />
+                            <input type="datetime-local" name="endDateMember" value={formData.endDateMember || ""} onChange={handleChange} />
                         </div>
 
                         {/* Nhóm hình ảnh và token */}
@@ -164,7 +196,7 @@ const EditUserForm = ({ user, onSave, onClose }) => {
                         <div className="input-group">
                             <label>Nhóm MBTI</label>
                             <div className="tag-container">
-                                {formData.userType.map((type, index) => (
+                                {formData.userType.map((type: string, index: number) => (
                                     <span key={index} className="tag">
                                         {type} <button type="button" className="remove-tag" onClick={() => removeUserType(index)}>✖</button>
                                     </span>
@@ -186,7 +218,7 @@ const EditUserForm = ({ user, onSave, onClose }) => {
                         {/* Nhóm đánh giá tâm lý */}
                         <div className="input-group">
                             <label>Câu trả lời có vấn đề trong GAD7 (Không thể sửa)</label>
-                            <textarea name="GAD7CriticalPoint" value={formData.GAD7CriticalPoint} rows="3" disabled />
+                            <textarea name="GAD7CriticalPoint" value={formData.GAD7CriticalPoint} rows={3} disabled />
                         </div>
                         <div className="input-group">
                             <label>BDI Rate</label>
@@ -200,7 +232,7 @@ const EditUserForm = ({ user, onSave, onClose }) => {
                         {/* Nhóm nhận xét & phản hồi */}
                         <div className="input-group" style={{ flex: "1 1 100%" }}>
                             <label>Nhận xét bài luận</label>
-                            <textarea name="essayComment" value={formData.essayComment} onChange={handleChange} rows="3" />
+                            <textarea name="essayComment" value={formData.essayComment} onChange={handleChange} rows={3} />
                         </div>
                     </div>
 

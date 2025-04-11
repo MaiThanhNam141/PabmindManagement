@@ -6,22 +6,40 @@ import { Timestamp } from "@firebase/firestore";
 
 const { Option } = Select;
 
-const AppointmentModal = ({ isOpen, onClose, onSubmit, initState = null }) => {
+interface AppointmentModalProps {
+	isOpen: boolean;
+	onClose: () => void;
+	onSubmit: (data: { displayName: string; phone: string; email?: string; age: number; address?: string; servicePackage: string; topic?: string; adviseDirect: string; consultationDate: Timestamp | null }) => void;
+	initState?: {
+		id?: string | null;
+		consultationDate?: { seconds: number } | null;
+		displayName?: string;
+		phone?: string;
+		email?: string;
+		age?: number;
+		address?: string;
+		servicePackage?: string;
+		topic?: string;
+		adviseDirect?: string;
+	} | null;
+}
+
+const AppointmentModal: React.FC<AppointmentModalProps> = ({ isOpen, onClose, onSubmit, initState = null }) => {
 	const [form] = Form.useForm();
 	const [isDirty, setIsDirty] = useState(false);
-	const [recordId, setRecordId] = useState(null);
+	const [recordId, setRecordId] = useState<string | null>(null);
 
 	useEffect(() => {
 		if (initState) {
-			const { id, consultationDate } = initState;
-
+			const { id, consultationDate }: { id?: string | null; consultationDate?: { seconds: number } | null } = initState;;
+			
 			setRecordId(id || null);
 
 			const dateValue = consultationDate ? dayjs.unix(consultationDate.seconds) : null;
 			const timeValue = dateValue ? dayjs(dateValue.format("HH:mm"), "HH:mm") : null;
 
 			form.setFieldsValue({
-				...initState,
+				...(typeof initState === "object" && initState !== null ? initState : {}),
 				consultationDate: dateValue,
 				consultationTime: timeValue,
 			});
@@ -64,7 +82,9 @@ const AppointmentModal = ({ isOpen, onClose, onSubmit, initState = null }) => {
 			return;
 		}
 
-		confirmExit(onClose);
+		confirmExit(async () => {
+			onClose();
+		});
 	};
 
 	return (

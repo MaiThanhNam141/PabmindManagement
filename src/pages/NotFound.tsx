@@ -1,16 +1,26 @@
-import React, { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import "../style/NotFound.css";
 
 const NotFound = () => {
     const [count, setCount] = useState(10);
-    const [bloodHands, setBloodHands] = useState([]);
+    const [bloodHands, setBloodHands] = useState<{ id: number; x: number; y: number; rotation: number }[]>([]);
     const [showEye, setShowEye] = useState(false);
 
-    const backgroundColors = [
-        "#ffffff", "#e5e5e5", "#cccccc", "#b2b2b2", "#999999",
-        "#7f7f7f", "#666666", "#4c4c4c", "#333333", "#191919", "#000000"
-    ];
+    const getRandomPosition = useCallback(() => {
+        return {
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+        };
+    }, []);
+
+    const addBloodHands = useCallback((number: number) => {
+        const newHands = Array.from({ length: number }, (_, id) => {
+            const { x, y } = getRandomPosition();
+            return { id: bloodHands.length + id, x, y, rotation: Math.random() * 360 };
+        });
+        setBloodHands((prev) => [...prev, ...newHands]);
+    }, [bloodHands, getRandomPosition]);
 
     useEffect(() => {
         if (count === 0) return;
@@ -23,6 +33,11 @@ const NotFound = () => {
     }, [count]);
 
     useEffect(() => {
+        const backgroundColors = [
+            "#ffffff", "#e5e5e5", "#cccccc", "#b2b2b2", "#999999",
+            "#7f7f7f", "#666666", "#4c4c4c", "#333333", "#191919", "#000000"
+        ];
+
         document.body.style.background = backgroundColors[10 - count];
 
         if (count <= 10) {
@@ -32,22 +47,7 @@ const NotFound = () => {
         if (count === 0) {
             setShowEye(true);
         }
-    }, [count]);
-
-    function getRandomPosition() {
-        return {
-            x: Math.random() * window.innerWidth,
-            y: Math.random() * window.innerHeight,
-        };
-    }
-
-    function addBloodHands(number) {
-        const newHands = Array.from({ length: number }, (_, id) => {
-            const { x, y } = getRandomPosition();
-            return { id: bloodHands.length + id, x, y, rotation: Math.random() * 360 };
-        });
-        setBloodHands((prev) => [...prev, ...newHands]);
-    }
+    }, [count, addBloodHands]);
 
     return (
         <div className="denied__wrapper">
