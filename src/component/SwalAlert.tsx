@@ -1,6 +1,21 @@
 import Swal from 'sweetalert2';
+import { Timestamp } from 'firebase/firestore';
 
-const formatTimestamp = (timestamp) => {
+interface Appointment {
+	id: string;
+	displayName?: string;
+	phone?: string;
+	email?: string;
+	age?: number;
+	address?: string;
+	servicePackage?: string;
+	topic?: string;
+	adviseDirect?: string;
+	consultationDate?: Timestamp | null;
+	time?: Timestamp | null;
+}
+
+const formatTimestamp = (timestamp: Timestamp) => {
 	if (!timestamp || !timestamp.toDate) return "Không có";
 
 	const date = timestamp.toDate();
@@ -15,7 +30,7 @@ const formatTimestamp = (timestamp) => {
 };
 
 
-export const confirmSendNotification = async (title, body, token = "", fn) => {
+export const confirmSendNotification = async (title: string, body: string, token = "", fn: () => Promise<void>) => {
 	const result = await Swal.fire({
 		title: `Xác nhận gửi thông báo?`,
 		html: `
@@ -62,7 +77,7 @@ export const confirmSendNotification = async (title, body, token = "", fn) => {
 	}
 }
 
-export const confirmDelete = async (id, name, fn) => {
+export const confirmDelete = async (id: number | string, name: string, fn: (id: number | string) => Promise<void>) => {
 	const result = await Swal.fire({
 		title: `Bạn có chắc chắn muốn xóa ${name}?`,
 		icon: "warning",
@@ -103,7 +118,7 @@ export const confirmDelete = async (id, name, fn) => {
 	}
 };
 
-export const confirmAdd = async (fn) => {
+export const confirmAdd = async (fn: () => Promise<void>) => {
 	const result = await Swal.fire({
 		title: `Xác nhận thêm?`,
 		icon: "question",
@@ -146,7 +161,7 @@ export const confirmAdd = async (fn) => {
 };
 
 
-export const confirmExit = async (fn) => {
+export const confirmExit = async (fn: () => Promise<void>) => {
 	const result = await Swal.fire({
 		title: "Xác nhận thoát",
 		text: "Bạn có thay đổi chưa lưu. Bạn có chắc chắn muốn thoát?",
@@ -161,15 +176,15 @@ export const confirmExit = async (fn) => {
 	}
 }
 
-export const successAlert = (message) => {
+export const successAlert = (message: string) => {
 	Swal.fire('Thành công', message, 'success');
 }
 
-export const errorAlert = (message) => {
+export const errorAlert = (message: string) => {
 	Swal.fire('Thất bại', message, 'error');
 }
 
-export const showInfoAppointmentAlert = (appointment) => {
+export const showInfoAppointmentAlert = (appointment: Appointment) => {
 	Swal.fire({
 		title: 'Thông tin chi tiết',
 		html: `
@@ -181,8 +196,8 @@ export const showInfoAppointmentAlert = (appointment) => {
 			<p><strong>Chủ đề:</strong> ${appointment?.topic || "Không có dữ liệu"}</p>
 			<p><strong>Hình thức tư vấn:</strong> ${appointment?.adviseDirect || "Không có dữ liệu"}</p>
 			<p><strong>Tuổi:</strong> ${appointment?.age || "Không có dữ liệu"}</p>
-			<p><strong>Ngày hẹn:</strong> ${formatTimestamp(appointment?.consultationDate) || "Không có dữ liệu"}</p>
-			<p><strong>Ngày đặt lịch:</strong> ${formatTimestamp(appointment?.time) || "Không có dữ liệu"}</p>
+			<p><strong>Ngày hẹn:</strong> ${appointment?.consultationDate ? formatTimestamp(appointment.consultationDate) : "Không có dữ liệu"}</p>
+			<p><strong>Ngày đặt lịch:</strong> ${appointment?.time ? formatTimestamp(appointment.time) : "Không có dữ liệu"}</p>
 				`,
 		confirmButtonText: 'Đóng'
 	});

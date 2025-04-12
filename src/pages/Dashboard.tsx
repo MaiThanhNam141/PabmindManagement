@@ -1,8 +1,8 @@
-import React, { useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
+import { useContext } from 'react';
+import { AuthContext } from "../context/AuthContextInstance";
 import { Link, Outlet } from 'react-router-dom';
 import Logo from "../assets/logo.png";
-import Sidebar from '../component/Sidebar';
+import Sidebar from '../component/Sidebar.tsx';
 import { auth } from "../firebase/config"
 import { signOut } from '@firebase/auth';
 import { motion } from "framer-motion";
@@ -55,7 +55,7 @@ const Dashboard = () => {
                     exit={{ opacity: 0, width: 0 }}
                     transition={{ duration: 0.1, delay: 0.1 }}
                     whileHover={{
-                      color: 'red',
+                      color: '#000',
                       transition: { duration: 0.1 },
                     }}
                   >

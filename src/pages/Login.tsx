@@ -1,32 +1,32 @@
-import React, { useState, useContext } from 'react';
+import { useState, useContext } from 'react';
 import Logo from "../assets/logo.png";
 import { auth } from "../firebase/config"
 import Swal from 'sweetalert2';
 import { signInWithEmailAndPassword } from "@firebase/auth";
 import { useNavigate } from "react-router-dom";
-import { AuthContext } from '../context/AuthContext';
+import { AuthContext } from "../context/AuthContextInstance";
 import loadingGif from '../assets/loading.gif';
 import ReCAPTCHA from "react-google-recaptcha";
 
 import '../style/Login.css'
-import { errorAlert, successAlert } from '../component/SwalAlert';
+import { errorAlert, successAlert } from '../component/SwalAlert.tsx';
 
 const Login = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [error, setError] = useState(null);
-    const [captchaValue, setCaptchaValue] = useState(null);
+    const [email, setEmail] = useState<string>('');
+    const [password, setPassword] = useState<string>('');
+    const [showPassword, setShowPassword] = useState<boolean>(false);
+    const [error, setError] = useState<string>("");
+    const [captchaValue, setCaptchaValue] = useState<string | null>(null);
 
     const navigate = useNavigate();
 
     const { dispatch } = useContext(AuthContext)
 
-    const handleEmailChange = (e) => {
+    const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setEmail(e.target.value);
     };
 
-    const handlePasswordChange = (e) => {
+    const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setPassword(e.target.value);
     };
 
@@ -34,7 +34,7 @@ const Login = () => {
         setShowPassword(!showPassword);
     };
 
-    const handleLogin = async (event) => {
+    const handleLogin = async (event: { preventDefault: () => void; }) => {
         event.preventDefault();
 
         if (!captchaValue) {
@@ -78,7 +78,7 @@ const Login = () => {
                     const user = userCredential.user;
                     dispatch({ type: "LOGIN", payload: user });
                     navigate("/")
-                    setError(null);
+                    setError("");
                 })
                 .catch((error) => {
                     errorAlert("Email hoặc mật khẩu không đúng. Vui lòng thử lại")

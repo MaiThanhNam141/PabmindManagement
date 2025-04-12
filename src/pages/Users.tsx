@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { db } from "../firebase/config";
 import {
     collection, getDocs, deleteDoc, doc, updateDoc,
@@ -7,23 +7,56 @@ import {
 import { Edit, Trash, Search as SearchIcon } from 'lucide-react';
 import { ClimbingBoxLoader } from 'react-spinners';
 import { useLocation, useNavigate } from 'react-router-dom';
-import EditUserForm from '../component/EditUserForm';
+import EditUserForm from '../component/EditUserForm.tsx';
 import { motion } from 'framer-motion';
 import { confirmDelete, successAlert, errorAlert } from '../component/SwalAlert';
 import { Table, Input, Typography, Space, Button, Image, Spin, Alert } from 'antd';
+import { Timestamp, QueryDocumentSnapshot, DocumentData } from '@firebase/firestore';
 
 const { Title } = Typography;
 const { Search } = Input;
 
+interface GAD7 {
+    qIndex: number;
+    point: number;
+}
+
+interface User {
+    id: string;
+    displayName: string;
+    email: string;
+    startDateMember: Timestamp | null;
+    endDateMember: Timestamp | null;
+    eq: number;
+    age: number;
+    coin: number;
+    userType: string[];
+    DISCType: string;
+    phone: string;
+    address: string;
+    memberActive: boolean;
+    memberID: string;
+    photoURL: string;
+    GAD7CriticalPoint: GAD7[] | null;
+    token: string;
+    charity: number;
+    bmi: number;
+    essayComment: string;
+    BDIRateID: string;
+    GAD7Result: string;
+    displayNameLower: string;
+    emailLower: string;
+}
+
 const Users = () => {
-    const [allUsers, setAllUsers] = useState([]);
-    const [filteredUsers, setFilteredUsers] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [isSearchingGlobal, setIsSearchingGlobal] = useState(false);
-    const [noLocalResults, setNoLocalResults] = useState(false);
-    const [noGlobalResultsFound, setNoGlobalResultsFound] = useState(false);
-    const [editingUser, setEditingUser] = useState(null);
-    const [searchTerm, setSearchTerm] = useState('');
+    const [allUsers, setAllUsers] = useState<User[]>();
+    const [filteredUsers, setFilteredUsers] = useState<User[]>();
+    const [loading, setLoading] = useState<boolean>(true);
+    const [isSearchingGlobal, setIsSearchingGlobal] = useState<boolean>(false);
+    const [noLocalResults, setNoLocalResults] = useState<boolean>(false);
+    const [noGlobalResultsFound, setNoGlobalResultsFound] = useState<boolean>(false);
+    const [editingUser, setEditingUser] = useState<User | null>(null);
+    const [searchTerm, setSearchTerm] = useState<string>('');
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -43,7 +76,7 @@ const Users = () => {
         }
     }, [searchTerm, navigate, location.search]);
 
-    const filterLocalUsers = useCallback((searchValue, sourceData) => {
+    const filterLocalUsers = useCallback((searchValue: string, sourceData: User[]) => {
         const lowerCaseValue = searchValue.toLowerCase().trim();
         setNoGlobalResultsFound(false);
 
@@ -76,13 +109,36 @@ const Users = () => {
             const dataQuery = query(usersCollection, orderBy('email'));
             const dataSnapshot = await getDocs(dataQuery);
 
-            const itemList = dataSnapshot.docs.map((doc, index) => ({
-                id: doc.id,
-                ...doc.data(),
-                index: index + 1,
-                displayNameLower: doc.data().displayNameLower || doc.data().displayName?.toLowerCase() || '',
-                emailLower: doc.data().emailLower || doc.data().email?.toLowerCase() || '',
-            }));
+            const itemList = dataSnapshot.docs.map((doc, index) => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    displayName: data.displayName || '',
+                    email: data.email || '',
+                    startDateMember: data.startDateMember || null,
+                    endDateMember: data.endDateMember || null,
+                    eq: data.eq || 0,
+                    age: data.age || 0,
+                    coin: data.coin || 0,
+                    userType: data.userType || [],
+                    DISCType: data.DISCType || '',
+                    phone: data.phone || '',
+                    address: data.address || '',
+                    memberActive: data.memberActive || false,
+                    memberID: data.memberID || '',
+                    photoURL: data.photoURL || '',
+                    GAD7CriticalPoint: data.GAD7CriticalPoint || null,
+                    token: data.token || '',
+                    charity: data.charity || 0,
+                    bmi: data.bmi || 0,
+                    essayComment: data.essayComment || '',
+                    BDIRateID: data.BDIRateID || '',
+                    GAD7Result: data.GAD7Result || '',
+                    displayNameLower: data.displayNameLower || data.displayName?.toLowerCase() || '',
+                    emailLower: data.emailLower || data.email?.toLowerCase() || '',
+                    index: index + 1,
+                };
+            });
 
             setAllUsers(itemList);
 
@@ -105,9 +161,9 @@ const Users = () => {
         fetchAllUsers();
     }, [fetchAllUsers]);
 
-    const handleSearchChange = (value) => {
+    const handleSearchChange = (value: string) => {
         setSearchTerm(value);
-        filterLocalUsers(value, allUsers);
+        filterLocalUsers(value, allUsers || []);
     };
 
     const searchHandler = useCallback(handleSearchChange, [allUsers, filterLocalUsers]);
@@ -147,13 +203,13 @@ const Users = () => {
 
             const resultsMap = new Map();
 
-            const addUserToMap = (doc) => {
+            const addUserToMap = (doc: QueryDocumentSnapshot<DocumentData>) => {
                 if (!resultsMap.has(doc.id)) {
+                    const data = doc.data() as User;
                     resultsMap.set(doc.id, {
-                        id: doc.id,
-                        ...doc.data(),
-                        displayNameLower: doc.data().displayNameLower || doc.data().displayName?.toLowerCase() || '',
-                        emailLower: doc.data().emailLower || doc.data().email?.toLowerCase() || '',
+                        ...data,
+                        displayNameLower: data.displayNameLower || data.displayName?.toLowerCase() || '',
+                        emailLower: data.emailLower || data.email?.toLowerCase() || '',
                     });
                 }
             };
@@ -161,7 +217,7 @@ const Users = () => {
             nameSnapshot.docs.forEach(addUserToMap);
             emailSnapshot.docs.forEach(addUserToMap);
 
-            let finalResults = Array.from(resultsMap.values())
+            const finalResults = Array.from(resultsMap.values())
                 .sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''))
                 .map((user, index) => ({ ...user, index: index + 1 }));
 
@@ -181,7 +237,7 @@ const Users = () => {
         }
     };
 
-    const handleUpdateUser = async (updatedData) => {
+    const handleUpdateUser = async (updatedData: User) => {
         const { id, ...data } = updatedData;
         if (data.displayName) data.displayNameLower = data.displayName.toLowerCase();
         if (data.email) data.emailLower = data.email.toLowerCase();
@@ -190,9 +246,9 @@ const Users = () => {
         try {
             await updateDoc(doc(db, "users", id), data);
 
-            const updatedAllUsers = allUsers.map(user =>
+            const updatedAllUsers = allUsers ? allUsers.map(user =>
                 user.id === id ? { ...user, ...data } : user
-            );
+            ) : [];
             setAllUsers(updatedAllUsers);
             filterLocalUsers(searchTerm, updatedAllUsers);
 
@@ -206,24 +262,25 @@ const Users = () => {
         }
     };
 
-    const handleDeleteUser = (user) => {
+    const handleDeleteUser = (user: User) => {
         confirmDelete(user.id, user.displayName, handleDelete);
     };
 
-    const handleDelete = async (id) => {
+    const handleDelete = async (id: string | number) => {
+        id = id.toString();
         setIsSearchingGlobal(true);
         try {
-            // await deleteDoc(doc(db, "users", id));
+            await deleteDoc(doc(db, "users", id.toString()));
 
-            const updatedAllUsers = allUsers
+            const updatedAllUsers = allUsers ? allUsers
                 .filter(u => u.id !== id)
-                .map((user, index) => ({ ...user, index: index + 1 }));
+                .map((user, index) => ({ ...user, index: index + 1 })) : [];
+
             setAllUsers(updatedAllUsers);
 
             filterLocalUsers(searchTerm, updatedAllUsers);
 
             successAlert("User deleted successfully.");
-            return true;
         } catch (error) {
             console.error("Error deleting user:", error);
             errorAlert("Unable to delete user.");
@@ -245,8 +302,7 @@ const Users = () => {
             dataIndex: 'photoURL',
             key: 'avatar',
             width: 100,
-            align: 'center',
-            render: (photoURL) => (
+            render: (photoURL: string) => (
                 <motion.div whileHover={{ scale: 1.05 }}>
                     <Image
                         src={photoURL || 'https://via.placeholder.com/50/92c952'}
@@ -264,21 +320,20 @@ const Users = () => {
             dataIndex: 'displayName',
             key: 'displayName',
             ellipsis: true,
-            sorter: (a, b) => (a.displayName || '').localeCompare(b.displayName || ''),
+            sorter: (a: User, b: User) => (a.displayName || '').localeCompare(b.displayName || ''),
         },
         {
             title: <strong>Email</strong>,
             dataIndex: 'email',
             key: 'email',
             ellipsis: true,
-            sorter: (a, b) => (a.email || '').localeCompare(b.email || ''),
+            sorter: (a: User, b: User) => (a.email || '').localeCompare(b.email || ''),
         },
         {
             title: <strong>Actions</strong>,
             key: 'actions',
             width: 120,
-            align: 'center',
-            render: (_, user) => (
+            render: (_: unknown, user: User) => (
                 <Space>
                     <motion.div whileHover={{ scale: 1.2 }}>
                         <Button
@@ -303,7 +358,7 @@ const Users = () => {
         },
     ];
 
-    if (loading && !allUsers.length) {
+    if (loading && !allUsers) {
         return (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f0f2f5' }}>
                 <ClimbingBoxLoader color="#87bc9d" loading size={25} speedMultiplier={0.8} />
@@ -370,8 +425,8 @@ const Users = () => {
             </Spin>
             {editingUser && (
                 <EditUserForm
-                    user={editingUser}
-                    onSave={handleUpdateUser}
+                    user={editingUser!}
+                    onSave={(data) => handleUpdateUser({ ...data, displayNameLower: data.displayName?.toLowerCase(), emailLower: data.email?.toLowerCase() })}
                     onClose={() => setEditingUser(null)}
                 />
             )}

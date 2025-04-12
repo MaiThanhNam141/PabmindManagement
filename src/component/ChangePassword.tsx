@@ -1,16 +1,22 @@
-import React, { useState, useContext } from "react";
+import { useState, useContext } from "react";
 import { reauthenticateWithCredential, updatePassword, EmailAuthProvider, signOut } from "@firebase/auth";
 import { motion } from "framer-motion";
 import Swal from "sweetalert2";
-import { auth } from "../firebase/config";
-import { AuthContext } from "../context/AuthContext";
+import { auth } from "../firebase/config.tsx";
+import { AuthContext } from "../context/AuthContextInstance";
+
+import { User as FirebaseUser } from "@firebase/auth";
+
+interface User extends FirebaseUser {
+	role?: string;
+};
 
 const ChangePassword = () => {
-	const [oldPassword, setOldPassword] = useState("");
-	const [newPassword, setNewPassword] = useState("");
-	const [confirmPassword, setConfirmPassword] = useState("");
+	const [oldPassword, setOldPassword] = useState<string>("");
+	const [newPassword, setNewPassword] = useState<string>("");
+	const [confirmPassword, setConfirmPassword] = useState<string>("");
 
-	const { currentUser, dispatch } = useContext(AuthContext);
+	const { currentUser, dispatch } = useContext(AuthContext) as { currentUser: User, dispatch: React.Dispatch<{ type: string; payload?: string | number | boolean | object | null; }> };
 
 	const handleLogout = async () => {
 		try {
@@ -21,12 +27,12 @@ const ChangePassword = () => {
 		}
 	};
 	// 🔐 Hàm kiểm tra mật khẩu mạnh
-	const isStrongPassword = (password) => {
+	const isStrongPassword = (password: string) => {
 		const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{10,}$/;
 		return regex.test(password);
 	};
 
-	const handleChangePassword = async (e) => {
+	const handleChangePassword = async (e: { preventDefault: () => void; }) => {
 		e.preventDefault();
 
 		Swal.fire({
@@ -65,6 +71,10 @@ const ChangePassword = () => {
 		}
 
 		try {
+			if (!currentUser.email) {
+				Swal.fire("Lỗi!", "Email của bạn không hợp lệ!", "error");
+				return;
+			}
 			const credential = EmailAuthProvider.credential(currentUser.email, oldPassword);
 			await reauthenticateWithCredential(currentUser, credential);
 			await updatePassword(currentUser, newPassword);
@@ -79,8 +89,13 @@ const ChangePassword = () => {
 			setNewPassword("");
 			setConfirmPassword("");
 			handleLogout();
-		} catch (error) {
-			Swal.fire("Lỗi!", error.message, "error");
+		} catch (error: unknown) {
+			if (error instanceof Error) {
+                Swal.fire("Lỗi!", error.message, "error");
+            }
+			else {
+				Swal.fire("Lỗi!", "Đã xảy ra lỗi không xác định!", "error");
+			}
 		}
 	};
 
@@ -142,7 +157,7 @@ const ChangePassword = () => {
 	);
 };
 
-const styles = {
+const styles: { [key: string]: React.CSSProperties } = {
 	container: {
 		width: "60%",
 		margin: "50px auto",

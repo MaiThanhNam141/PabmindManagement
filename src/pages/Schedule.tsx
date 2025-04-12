@@ -1,21 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { db } from "../firebase/config";
-import { collection, getDocs, deleteDoc, doc, Timestamp, updateDoc, addDoc, query, orderBy, limit, startAfter } from '@firebase/firestore';
+import { collection, getDocs, deleteDoc, doc, Timestamp, updateDoc, addDoc, query, orderBy, limit, startAfter, QueryDocumentSnapshot } from '@firebase/firestore';
 import { Trash, Edit, Info, ChevronRight, ChevronLeft, PackagePlus } from 'lucide-react';
 import { ClimbingBoxLoader } from 'react-spinners'
 import { useLocation, useNavigate } from 'react-router-dom';
-import { styles } from '../style/pagination';
+import { styles } from '../style/pagination.tsx';
 import { confirmDelete, errorAlert, showInfoAppointmentAlert, successAlert } from '../component/SwalAlert';
-import AppointmentModal from '../component/AppointmentModal';
+import AppointmentModal from '../component/AppointmentModal.tsx';
 
 const Schedule = () => {
-    const [appointments, setAppointments] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [lastVisible, setLastVisible] = useState(null);
-    const [totalPages, setTotalPages] = useState(0);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectAppointment, setSelectAppointment] = useState(null);
+    interface Appointment {
+        id: string;
+        displayName?: string;
+        phone?: string;
+        email?: string;
+        age?: number;
+        address?: string;
+        servicePackage?: string;
+        topic?: string;
+        adviseDirect?: string;
+        consultationDate?: Timestamp | null;
+    }
+
+    const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [currentPage, setCurrentPage] = useState<number>(1);
+    const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot | null>(null);
+    const [totalPages, setTotalPages] = useState<number>(0);
+    const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+    const [selectAppointment, setSelectAppointment] = useState<Appointment | null>(null);
+
+    const memoizedInitState = useMemo(() => selectAppointment, [selectAppointment]);
 
     const itemPerPage = 100;
 
@@ -25,14 +40,14 @@ const Schedule = () => {
     const [searchTerm, setSearchTerm] = useState(new URLSearchParams(location.search).get("search") || '');
 
     useEffect(() => {
-        const params = new URLSearchParams(location.search);
-        if (searchTerm) {
-            params.set("search", searchTerm);
-        } else {
-            params.delete("search");
+        const currentParams = new URLSearchParams(location.search);
+        const currentSearch = currentParams.get("search") || "";
+    
+        if (searchTerm !== currentSearch) {
+            currentParams.set("search", searchTerm);
+            navigate(`?${currentParams.toString()}`, { replace: true });
         }
-        navigate(`?${params.toString()}`, { replace: true });
-    }, [searchTerm, navigate]);
+    }, [searchTerm, navigate, location.search]);
 
     useEffect(() => {
         fetchData()
@@ -125,14 +140,14 @@ const Schedule = () => {
         }
     };
 
-    const handlePageClick = (pageIndex) => {
+    const handlePageClick = (pageIndex: number) => {
         setCurrentPage(pageIndex);
         if (pageIndex > currentPage) {
             refetchMoreData(pageIndex - currentPage);
         }
     };
 
-    const handleAdd = async (formValues) => {
+    const handleAdd = async (formValues: Appointment) => {
         if (formValues) {
             try {
                 const newAppointment = {
@@ -141,7 +156,7 @@ const Schedule = () => {
                 };
                 await addDoc(collection(db, "AdviseSchedule"), newAppointment);
                 successAlert('Thêm lịch hẹn thành công')
-                setAppointments((prev) => [...prev, {...newAppointment, id: Math.random()}]);
+                setAppointments((prev) => [...prev, {...newAppointment, id: Math.random().toString()}]);
             } catch (error) {
                 console.error("Error add appointment: ", error);
                 errorAlert("Không thể thêm lịch hẹn");
@@ -153,15 +168,16 @@ const Schedule = () => {
         throw Error;
     };
 
-    const handleInfo = (appointment) => {
+    const handleInfo = (appointment: Appointment) => {
         showInfoAppointmentAlert(appointment)
     };
 
-    const handleEditAppointment = async (formValues) => {
+    const handleEditAppointment = async (formValues: Appointment) => {
         if (formValues) {
             try {
                 const newAppointment = {
                     ...formValues,
+                    email: formValues.email || '',
                     time: Timestamp.fromDate(new Date()),
                 };
 
@@ -179,33 +195,36 @@ const Schedule = () => {
         throw Error;
     };
 
-    const handleDelete = async (id) => {
+    const handleDelete = async (id: number | string) => {
         try {
-            await deleteDoc(doc(db, "AdviseSchedule", id));
+            await deleteDoc(doc(db, "AdviseSchedule", id.toString()));
             setAppointments(appointments.filter(a => a.id !== id));
             successAlert('Lịch hẹn đã được xóa')
         } catch (error) {
             errorAlert("Không thể xóa lịch hẹn");
+            console.error("Error deleting appointment: ", error);
+            throw Error;
         }
     }
 
-    const handleDeleteAppointment = async (appointment) => {
-        confirmDelete(appointment.id, appointment.displayName, handleDelete)
+    const handleDeleteAppointment = async (appointment: Appointment) => {
+        confirmDelete(appointment.id, appointment.displayName || '', handleDelete)
     };
 
-    const makeColorIndex = (appointment) => {
+    const makeColorIndex = (appointment: Appointment) => {
+        if (!appointment.consultationDate) return { backgroundColor: '#adadad' };
         const appointmentDate = new Date(appointment.consultationDate.seconds * 1000);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        if (appointmentDate < today) return { backgroundColor: 'gray' };
-        if (appointmentDate.toDateString() === today.toDateString()) return { backgroundColor: 'red', fontWeight: 'bold' };
-        return { backgroundColor: 'lightgreen' };
+        if (appointmentDate < today) return { backgroundColor: '#adadad' };
+        if (appointmentDate.toDateString() === today.toDateString()) return { backgroundColor: '#eb4634', fontWeight: 'bold' };
+        return { backgroundColor: '#80f576' };
     };
 
-    const makeAdviseDirectColorIndex = (appointment) => {
-        if (appointment.adviseDirect === "Tư vấn online") return { color: 'red' };
-        return { color: 'blue' };
+    const makeAdviseDirectColorIndex = (appointment: Appointment) => {
+        if (appointment.adviseDirect === "Tư vấn online") return { color: '#eb4634' };
+        return { color: '#059efc' };
     };
 
     if (loading) {
@@ -216,21 +235,45 @@ const Schedule = () => {
         )
     }
 
-    const handleSubmit = (formValues = null) => {
+    const handleSubmit = (formValues: {
+        id?: string;
+        displayName: string;
+        phone: string;
+        email?: string;
+        age: number;
+        address?: string;
+        servicePackage: string;
+        topic?: string;
+        adviseDirect: string;
+        consultationDate: Timestamp | null;
+    }) => {
         setIsModalOpen(false);
         setSelectAppointment(null);
-
+    
         if (formValues.id) {
-            handleEditAppointment(formValues);
-        } else {
-            handleAdd(formValues)
+            handleEditAppointment(formValues as Appointment);
+            return;
         }
-    }
+    
+        const newAppointment: Appointment = {
+            ...formValues,
+            id: Math.random().toString(),
+        };
+    
+        handleAdd(newAppointment);
+    };    
 
     const handleClose = () => {
         setIsModalOpen(false);
         setSelectAppointment(null);
     }
+
+    const handleEditClick = (item: Appointment) => {
+        if (JSON.stringify(selectAppointment) !== JSON.stringify(item)) {
+            setSelectAppointment(item);
+        }
+        setIsModalOpen(true);
+    };
 
     return (
         <div style={styles.container}>
@@ -282,7 +325,7 @@ const Schedule = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {paginated.map((item, index) => (
+                            {paginated.map((item: Appointment, index: number) => (
                                 <tr key={item.id} className="userRow" style={styles.tableRow}>
                                     <td style={Object.assign({ cursor: 'pointer' }, styles.td, makeColorIndex(item))} onClick={() => handleInfo(item)}>{index + indexOfFirst + 1}</td>
                                     <td style={styles.td}>{item.displayName}</td>
@@ -294,7 +337,7 @@ const Schedule = () => {
                                             <button style={styles.actionButton} className="actionButton" onClick={() => handleInfo(item)}>
                                                 <Info size={20} color="blue" />
                                             </button>
-                                            <button style={styles.actionButton} className="actionButton" onClick={() => { setSelectAppointment(item); setIsModalOpen(true) }}>
+                                            <button style={styles.actionButton} className="actionButton" onClick={() => handleEditClick(item)}>
                                                 <Edit size={20} color="#4CAF50" />
                                             </button>
                                             <button style={styles.actionButton} className="actionButton" onClick={() => handleDeleteAppointment(item)}>
@@ -338,7 +381,7 @@ const Schedule = () => {
                     isOpen={isModalOpen}
                     onClose={handleClose}
                     onSubmit={handleSubmit}
-                    initState={selectAppointment}
+                    initState={memoizedInitState ? memoizedInitState : null}
                 />
             }
 

@@ -1,17 +1,17 @@
-import { useState } from 'react'
-import { Loader2 } from 'lucide-react'
-import CryptoJS from 'crypto-js'
-import { confirmSendNotification, errorAlert, successAlert } from '../component/SwalAlert'
+import { useState } from 'react';
+import { Loader2 } from 'lucide-react';
+import CryptoJS from 'crypto-js';
+import { confirmSendNotification, errorAlert, successAlert } from '../component/SwalAlert';
 
 const FCM = () => {
-    const [title, setTitle] = useState('');
-    const [body, setBody] = useState('');
-    const [token, setToken] = useState('');
-    const [isSending, setIsSending] = useState(false);
+    const [title, setTitle] = useState<string>('');
+    const [body, setBody] = useState<string>('');
+    const [token, setToken] = useState<string>('');
+    const [isSending, setIsSending] = useState<boolean>(false);
 
     const integrity = import.meta.env.VITE_SECRET_HASH_KEY;
 
-    const generateSecretKey = (data) => {
+    const generateSecretKey = (data: string) => {
         return CryptoJS.SHA256(data + integrity).toString(CryptoJS.enc.Hex);
     };
 
@@ -21,9 +21,9 @@ const FCM = () => {
             return;
         }
         confirmSendNotification(title, body, token, handleSend)
-    };    
+    };
 
-    const sendNotificationToUser = async (title, body, token) => {
+    const sendNotificationToUser = async (title: string, body: string, token: string) => {
         const secretKey = generateSecretKey(`${token}${title}${body}`);
         try {
             const response = await fetch(import.meta.env.VITE_SEND_MESS_ONE_USER, {
@@ -44,11 +44,11 @@ const FCM = () => {
             }
         } catch (error) {
             console.error('Error sending message to user:', error)
-            throw error;
+            throw Error('Failed to send message');
         }
     }
 
-    const sendFCMNotification = async (title, body) => {
+    const sendFCMNotification = async (title: string, body: string) => {
         const secretKey = generateSecretKey(`${title}${body}`);
 
         try {
@@ -70,7 +70,7 @@ const FCM = () => {
             }
         } catch (error) {
             console.error('Error sending message:', error)
-            throw error;
+            throw Error('Failed to send message');
         }
     }
 
@@ -164,7 +164,7 @@ const FCM = () => {
 
 export default FCM
 
-const styles = {
+const styles: { [key: string]: React.CSSProperties } = {
     container: {
         width: '100%',
         maxWidth: '42rem',

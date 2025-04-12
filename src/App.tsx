@@ -1,23 +1,23 @@
 import { useContext } from 'react';
 import { Navigate, Route, Routes, BrowserRouter } from 'react-router-dom';
-import Dashboard from './pages/Dashboard.jsx';
-import Login from './pages/Login.jsx';
-import Statistics from './pages/Statistics.jsx';;
-import Users from './pages/Users.jsx';
-import NotFound from './pages/NotFound.jsx';
-import FCM from './pages/FCM.jsx';
-import Schedule from './pages/Schedule.jsx';
-import Blog from './pages/Blog.jsx';
-import ChangePassword from './component/ChangePassword.jsx';
-import Welcome from './pages/Welcome.jsx';
+import Dashboard from './pages/Dashboard.tsx';
+import Login from './pages/Login.tsx';
+import Users from './pages/Users.tsx';
+import NotFound from './pages/NotFound.tsx';
+import FCM from './pages/FCM.tsx';
+import Schedule from './pages/Schedule.tsx';
+import Blog from './pages/Blog.tsx';
+import ChangePassword from './component/ChangePassword.tsx';
+import Welcome from './pages/Welcome.tsx';
 
-import { AuthContext } from './context/AuthContext.jsx';
+import { AuthContext } from './context/AuthContextInstance.tsx';
 
 function App() {
   const { currentUser } = useContext(AuthContext);
 
-  const RequireAuth = ({ children }) => {
-    return currentUser ? children : <Navigate to="/login" />;
+  const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const isValidUser = currentUser && typeof currentUser.email === "string";
+    return isValidUser ? children : <Navigate to="/login" />;
   };
 
   return (
@@ -27,7 +27,6 @@ function App() {
           {/* Default Route */}
           <Route index element={<Welcome />} />
           {/* Nested Routes */}
-          <Route path="statistics" element={<Statistics />} />
           <Route path="blogs" element={<Blog />} />
           <Route path="schedule" element={<Schedule />} />
           <Route path="users" element={<Users />} />

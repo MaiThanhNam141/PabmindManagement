@@ -4,22 +4,31 @@ import { db, storage } from "../firebase/config";
 import { getDownloadURL, ref, uploadBytes, deleteObject } from '@firebase/storage';
 import { collection, addDoc, getDoc, getDocs, deleteDoc, doc } from '@firebase/firestore';
 import { ClimbingBoxLoader } from 'react-spinners'
-import ImageCropper from '../component/ImageCropper';
-import { styles } from '../style/blog';
+import ImageCropper from '../component/ImageCropper.tsx';
+import { styles } from '../style/blog.tsx';
 import { confirmAdd, confirmDelete, errorAlert, successAlert } from '../component/SwalAlert';
+import { Image } from 'antd';
+
+interface BlogData {
+  id: string;
+  index: number;
+  title: string;
+  link: string;
+  urlImages: string;
+}
 
 const Blog = () => {
-  const [title, setTitle] = useState('');
-  const [shareLink, setShareLink] = useState('');
-  const [fileUpload, setFileUpload] = useState(null);
+  const [title, setTitle] = useState<string>('');
+  const [shareLink, setShareLink] = useState<string>('');
+  const [fileUpload, setFileUpload] = useState<File | null>(null);
   const [isSending, setIsSending] = useState(false);
-  const [blogs, setBlogs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [cropSrc, setCropSrc] = useState('');
-  const [croppedImage, setCroppedImage] = useState(null);
-  const [showCropper, setShowCropper] = useState(false);
+  const [blogs, setBlogs] = useState<BlogData[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [cropSrc, setCropSrc] = useState<string>('');
+  const [croppedImage, setCroppedImage] = useState<Blob | null>(null);
+  const [showCropper, setShowCropper] = useState<boolean>(false);
 
-  const fileInputRef = useRef(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchBlogs();
@@ -28,11 +37,16 @@ const Blog = () => {
   const fetchBlogs = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, 'SliderImages'));
-      const blogsData = querySnapshot.docs.map((docSnap, index) => ({
-        id: docSnap.id,
-        index: index + 1,
-        ...docSnap.data()
-      }));
+      const blogsData = querySnapshot.docs.map((docSnap, index) => {
+        const data = docSnap.data();
+        return {
+          id: docSnap.id,
+          index: index + 1,
+          title: data.title || '',
+          link: data.link || '',
+          urlImages: data.urlImages || ''
+        };
+      });
       setBlogs(blogsData);
     } catch (error) {
       errorAlert("Lấy dữ liệu thất bại");
@@ -43,10 +57,19 @@ const Blog = () => {
   };
 
   const handleButtonClick = () => {
-    fileInputRef.current.click();
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    if (e.target.files.length === 0) return;
+    if (e.target.files.length > 1) {
+      errorAlert('Chỉ được chọn một file hình ảnh');
+      e.target.value = '';
+      return;
+    }
     const file = e.target.files[0];
     if (file && ['image/png', 'image/jpeg'].includes(file.type)) {
       setFileUpload(file);
@@ -54,7 +77,7 @@ const Blog = () => {
       setCropSrc(imageUrl);
       setShowCropper(true);
     } else {
-      e.target.value = null;
+      e.target.value = '';
     }
   };
 
@@ -65,7 +88,17 @@ const Blog = () => {
       const storagePath = `Blog/${fileName}`;
       const storageRef = ref(storage, storagePath);
 
-      await uploadBytes(storageRef, croppedImage || fileUpload);
+      if (croppedImage || fileUpload) {
+        if (croppedImage) {
+          await uploadBytes(storageRef, croppedImage);
+        } else if (fileUpload) {
+          await uploadBytes(storageRef, fileUpload);
+        } else {
+          throw new Error("No valid file or cropped image to upload.");
+        }
+      } else {
+        throw new Error("No valid file or cropped image to upload.");
+      }
       const downloadURL = await getDownloadURL(storageRef);
 
       const newBlog = {
@@ -113,25 +146,25 @@ const Blog = () => {
     confirmAdd(addBlog)
   };
 
-  const handleDelete = (id, name) => {
+  const handleDelete = (id: string, name: string) => {
     confirmDelete(id, name, deleteBlog);
   }
 
-  const deleteBlog = async (id) => {
+  const deleteBlog = async (id: string | number) => {
     try {
-      const docRef = doc(db, "SliderImages", id);
+      const docRef = doc(db, "SliderImages", id.toString());
       const docSnap = await getDoc(docRef);
 
       if (!docSnap.exists()) {
         errorAlert("Không tìm thấy dữ liệu cần xóa")
-        return;
+        throw new Error("No such document!");
       }
 
       const { storagePath } = docSnap.data();
 
       if (!storagePath) {
         errorAlert("Không tìm thấy địa chỉ hình ảnh cần xóa")
-        return;
+        throw new Error("No such document!");
       }
 
       const fileRef = ref(storage, storagePath);
@@ -143,6 +176,7 @@ const Blog = () => {
     } catch (error) {
       console.error(error);
       errorAlert("Đã xảy ra lỗi nào đó")
+      throw new Error("Error deleting document: ");
     }
   };
 
@@ -188,8 +222,8 @@ const Blog = () => {
           <motion.button
             style={styles.buttonFile}
             onClick={handleButtonClick}
-            onMouseOver={(e) => Object.assign(e.target.style, styles.buttonFileHover)}
-            onMouseOut={(e) => Object.assign(e.target.style, styles.buttonFile)}
+            onMouseOver={(e) => Object.assign((e.target as HTMLButtonElement).style, styles.buttonFileHover)}
+            onMouseOut={(e) => Object.assign((e.target as HTMLButtonElement).style, styles.buttonFile)}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.8 }}
           >
@@ -207,7 +241,7 @@ const Blog = () => {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ width: '100%' }}>
             <ImageCropper
               src={cropSrc}
-              onComplete={(blob) => {
+              onComplete={(blob: Blob) => {
                 setCroppedImage(blob);
                 setShowCropper(false);
               }}
@@ -251,20 +285,24 @@ const Blog = () => {
           <tbody>
             <AnimatePresence>
               {blogs.map((blog) => (
-                <motion.tr key={blog.id} style={styles.tableTr} whileHover={{ scale: 1.01, backgroundColor: "#f0f8ff" }}>
-                  <td style={styles.indexTd}>{blog.index}</td>
-                  <td style={styles.tableTd}>
+                <motion.tr key={blog.id} style={{ ...styles.tableTr }} whileHover={{ scale: 1.01, backgroundColor: "#f0f8ff" }}>
+                  <td style={{ ...styles.indexTd, ...styles.tableTd }}>{blog.index}</td>
+                  <td style={{ ...styles.tableTd }}>
                     <a href={blog.link} target='_blank' rel='noopener noreferrer' style={styles.link}>
                       {blog.title}
                     </a>
                   </td>
                   <td style={styles.tableTd}>
                     <motion.button
-                      whileHover={{ scale: 1.1 }}
                       style={styles.actionButton}
-                      onClick={() => window.open(blog.urlImages, '_blank')}
                     >
-                      <img src={blog.urlImages} alt={blog.title} style={styles.image} />
+                      <Image
+                        src={blog.urlImages || 'https://via.placeholder.com/50/92c952'}
+                        preview={true}
+                        fallback='https://via.placeholder.com/50/cccccc'
+                        alt={blog.title}
+                        style={styles.image}
+                      />
                     </motion.button>
                   </td>
                   <td style={styles.tableTd}>
@@ -280,6 +318,7 @@ const Blog = () => {
               ))}
             </AnimatePresence>
           </tbody>
+
         </table>
       </div>
     </motion.div>
