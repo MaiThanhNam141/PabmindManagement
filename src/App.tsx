@@ -12,6 +12,17 @@ import Welcome from './pages/Welcome.tsx';
 
 import { AuthContext } from './context/AuthContextInstance.tsx';
 
+/**
+ * Renders the main application routing and enforces authentication for protected routes.
+ *
+ * This component sets up routing using React Router. It defines a nested authentication guard that checks
+ * if the current user is valid (by verifying the presence and type of the user's email). When authenticated,
+ * the dashboard and its nested routes (Welcome, Blog, Schedule, Users, FCM, ChangePassword) are accessible;
+ * otherwise, the user is redirected to the login page. Public routes for login and a fallback NotFound page
+ * are also provided.
+ *
+ * @returns A JSX element representing the configured routing for the application.
+ */
 function App() {
   const { currentUser } = useContext(AuthContext);
 
