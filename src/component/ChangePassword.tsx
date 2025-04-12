@@ -89,7 +89,7 @@ const ChangePassword = () => {
 			setNewPassword("");
 			setConfirmPassword("");
 			handleLogout();
-		} catch (error: Error | unknown) {
+		} catch (error: unknown) {
 			if (error instanceof Error) {
                 Swal.fire("Lỗi!", error.message, "error");
             }
