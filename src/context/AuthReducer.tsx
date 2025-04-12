@@ -17,8 +17,11 @@ interface AuthAction {
 const AuthReducer = (state: AuthState, action: AuthAction): AuthState => {
     switch (action.type) {
       case "LOGIN": {
+        // Validate payload has expected User properties before casting
+        const isValidUser = action.payload && 
+          typeof (action.payload as any).email === 'string';
         return {
-          currentUser: action.payload as User || null,
+          currentUser: isValidUser ? (action.payload as User) : null,
         };
       }
       case "LOGOUT": {
