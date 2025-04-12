@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ant-design/v5-patch-for-react-19": "^1.0.3",
+    "@types/animejs": "^3.1.13",
     "animejs": "^4.0.1",
     "antd": "^5.24.6",
     "crypto-js": "^4.2.0",

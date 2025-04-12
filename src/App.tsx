@@ -16,7 +16,8 @@ function App() {
   const { currentUser } = useContext(AuthContext);
 
   const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    return currentUser ? children : <Navigate to="/login" />;
+    const isValidUser = currentUser && typeof currentUser.email === "string";
+    return isValidUser ? children : <Navigate to="/login" />;
   };
 
   return (

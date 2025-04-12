@@ -26,7 +26,7 @@ const Welcome = () => {
     const [weather, setWeather] = useState<WeatherData | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    const username = currentUser?.email.split("@")[0];
+    const username = currentUser ? currentUser.email?.split?.("@")[0] : "User";
     const currentHour = new Date().getHours();
     let greeting;
 
@@ -69,6 +69,10 @@ const Welcome = () => {
             }
         }
     };
+
+    if (!currentUser?.email) {
+        return <div>Loading user info...</div>;
+    }
 
     return (
         <div style={styles.container}>

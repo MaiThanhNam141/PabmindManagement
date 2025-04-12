@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { db } from "../firebase/config";
 import { collection, getDocs, deleteDoc, doc, Timestamp, updateDoc, addDoc, query, orderBy, limit, startAfter, QueryDocumentSnapshot } from '@firebase/firestore';
 import { Trash, Edit, Info, ChevronRight, ChevronLeft, PackagePlus } from 'lucide-react';
@@ -7,7 +7,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { styles } from '../style/pagination.tsx';
 import { confirmDelete, errorAlert, showInfoAppointmentAlert, successAlert } from '../component/SwalAlert';
 import AppointmentModal from '../component/AppointmentModal.tsx';
-
 
 const Schedule = () => {
     interface Appointment {
@@ -24,12 +23,14 @@ const Schedule = () => {
     }
 
     const [appointments, setAppointments] = useState<Appointment[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [currentPage, setCurrentPage] = useState(1);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [currentPage, setCurrentPage] = useState<number>(1);
     const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot | null>(null);
-    const [totalPages, setTotalPages] = useState(0);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [totalPages, setTotalPages] = useState<number>(0);
+    const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
     const [selectAppointment, setSelectAppointment] = useState<Appointment | null>(null);
+
+    const memoizedInitState = useMemo(() => selectAppointment, [selectAppointment]);
 
     const itemPerPage = 100;
 
@@ -39,14 +40,14 @@ const Schedule = () => {
     const [searchTerm, setSearchTerm] = useState(new URLSearchParams(location.search).get("search") || '');
 
     useEffect(() => {
-        const params = new URLSearchParams(location.search);
-        if (searchTerm) {
-            params.set("search", searchTerm);
-        } else {
-            params.delete("search");
+        const currentParams = new URLSearchParams(location.search);
+        const currentSearch = currentParams.get("search") || "";
+    
+        if (searchTerm !== currentSearch) {
+            currentParams.set("search", searchTerm);
+            navigate(`?${currentParams.toString()}`, { replace: true });
         }
-        navigate(`?${params.toString()}`, { replace: true });
-    }, [searchTerm, navigate, location]);
+    }, [searchTerm, navigate, location.search]);
 
     useEffect(() => {
         fetchData()
@@ -176,6 +177,7 @@ const Schedule = () => {
             try {
                 const newAppointment = {
                     ...formValues,
+                    email: formValues.email || '',
                     time: Timestamp.fromDate(new Date()),
                 };
 
@@ -210,19 +212,19 @@ const Schedule = () => {
     };
 
     const makeColorIndex = (appointment: Appointment) => {
-        if (!appointment.consultationDate) return { backgroundColor: 'gray' };
+        if (!appointment.consultationDate) return { backgroundColor: '#adadad' };
         const appointmentDate = new Date(appointment.consultationDate.seconds * 1000);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        if (appointmentDate < today) return { backgroundColor: 'gray' };
-        if (appointmentDate.toDateString() === today.toDateString()) return { backgroundColor: 'red', fontWeight: 'bold' };
-        return { backgroundColor: 'lightgreen' };
+        if (appointmentDate < today) return { backgroundColor: '#adadad' };
+        if (appointmentDate.toDateString() === today.toDateString()) return { backgroundColor: '#eb4634', fontWeight: 'bold' };
+        return { backgroundColor: '#80f576' };
     };
 
     const makeAdviseDirectColorIndex = (appointment: Appointment) => {
-        if (appointment.adviseDirect === "Tư vấn online") return { color: 'red' };
-        return { color: 'blue' };
+        if (appointment.adviseDirect === "Tư vấn online") return { color: '#eb4634' };
+        return { color: '#059efc' };
     };
 
     if (loading) {
@@ -233,37 +235,45 @@ const Schedule = () => {
         )
     }
 
-    const handleSubmit = (formValues: { 
-        id?: string; 
-        displayName: string; 
-        phone: string; 
-        email?: string; 
-        age: number; 
-        address?: string; 
-        servicePackage: string; 
-        topic?: string; 
-        adviseDirect: string; 
-        consultationDate: Timestamp | null; 
+    const handleSubmit = (formValues: {
+        id?: string;
+        displayName: string;
+        phone: string;
+        email?: string;
+        age: number;
+        address?: string;
+        servicePackage: string;
+        topic?: string;
+        adviseDirect: string;
+        consultationDate: Timestamp | null;
     }) => {
         setIsModalOpen(false);
         setSelectAppointment(null);
-
+    
         if (formValues.id) {
-            if (formValues.id) {
-                handleEditAppointment(formValues as Appointment);
-            } else {
-                console.error("Missing id in formValues");
-                errorAlert("Không thể cập nhật lịch hẹn do thiếu id");
-            }
-        } else {
-            handleAdd({ ...formValues, id: formValues.id || Math.random().toString() })
+            handleEditAppointment(formValues as Appointment);
+            return;
         }
-    }
+    
+        const newAppointment: Appointment = {
+            ...formValues,
+            id: Math.random().toString(),
+        };
+    
+        handleAdd(newAppointment);
+    };    
 
     const handleClose = () => {
         setIsModalOpen(false);
         setSelectAppointment(null);
     }
+
+    const handleEditClick = (item: Appointment) => {
+        if (JSON.stringify(selectAppointment) !== JSON.stringify(item)) {
+            setSelectAppointment(item);
+        }
+        setIsModalOpen(true);
+    };
 
     return (
         <div style={styles.container}>
@@ -327,7 +337,7 @@ const Schedule = () => {
                                             <button style={styles.actionButton} className="actionButton" onClick={() => handleInfo(item)}>
                                                 <Info size={20} color="blue" />
                                             </button>
-                                            <button style={styles.actionButton} className="actionButton" onClick={() => { setSelectAppointment(item); setIsModalOpen(true) }}>
+                                            <button style={styles.actionButton} className="actionButton" onClick={() => handleEditClick(item)}>
                                                 <Edit size={20} color="#4CAF50" />
                                             </button>
                                             <button style={styles.actionButton} className="actionButton" onClick={() => handleDeleteAppointment(item)}>
@@ -371,7 +381,7 @@ const Schedule = () => {
                     isOpen={isModalOpen}
                     onClose={handleClose}
                     onSubmit={handleSubmit}
-                    initState={selectAppointment ? { ...selectAppointment, consultationDate: selectAppointment.consultationDate ? { seconds: selectAppointment.consultationDate.seconds } : null } : null}
+                    initState={memoizedInitState ? memoizedInitState : null}
                 />
             }
 

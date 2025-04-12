@@ -7,6 +7,7 @@ import { ClimbingBoxLoader } from 'react-spinners'
 import ImageCropper from '../component/ImageCropper.tsx';
 import { styles } from '../style/blog.tsx';
 import { confirmAdd, confirmDelete, errorAlert, successAlert } from '../component/SwalAlert';
+import { Image } from 'antd';
 
 interface BlogData {
   id: string;
@@ -151,7 +152,7 @@ const Blog = () => {
 
   const deleteBlog = async (id: string | number) => {
     try {
-      const docRef = doc(db, "SliderImages", id. toString());
+      const docRef = doc(db, "SliderImages", id.toString());
       const docSnap = await getDoc(docRef);
 
       if (!docSnap.exists()) {
@@ -284,20 +285,24 @@ const Blog = () => {
           <tbody>
             <AnimatePresence>
               {blogs.map((blog) => (
-                <motion.tr key={blog.id} style={styles.tableTr} whileHover={{ scale: 1.01, backgroundColor: "#f0f8ff" }}>
-                  <td style={styles.indexTd}>{blog.index}</td>
-                  <td style={styles.tableTd}>
+                <motion.tr key={blog.id} style={{ ...styles.tableTr }} whileHover={{ scale: 1.01, backgroundColor: "#f0f8ff" }}>
+                  <td style={{ ...styles.indexTd, ...styles.tableTd }}>{blog.index}</td>
+                  <td style={{ ...styles.tableTd }}>
                     <a href={blog.link} target='_blank' rel='noopener noreferrer' style={styles.link}>
                       {blog.title}
                     </a>
                   </td>
                   <td style={styles.tableTd}>
                     <motion.button
-                      whileHover={{ scale: 1.1 }}
                       style={styles.actionButton}
-                      onClick={() => window.open(blog.urlImages, '_blank')}
                     >
-                      <img src={blog.urlImages} alt={blog.title} style={styles.image} />
+                      <Image
+                        src={blog.urlImages || 'https://via.placeholder.com/50/92c952'}
+                        preview={true}
+                        fallback='https://via.placeholder.com/50/cccccc'
+                        alt={blog.title}
+                        style={styles.image}
+                      />
                     </motion.button>
                   </td>
                   <td style={styles.tableTd}>
@@ -313,6 +318,7 @@ const Blog = () => {
               ))}
             </AnimatePresence>
           </tbody>
+
         </table>
       </div>
     </motion.div>

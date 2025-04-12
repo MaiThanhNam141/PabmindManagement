@@ -1,4 +1,4 @@
-export const styles:{ [key: string]: React.CSSProperties } = {
+export const styles: { [key: string]: React.CSSProperties } = {
 	container: {
 		width: '100%',
 		maxWidth: '900px',
@@ -98,10 +98,13 @@ export const styles:{ [key: string]: React.CSSProperties } = {
 	tableTd: {
 		border: '1px solid #ecf0f1',
 		padding: '0.75rem',
-		textAlign: 'center'
+		textAlign: 'center',
+		height: '50px',
+		verticalAlign: 'middle',
 	},
 	tableTr: {
-		backgroundColor: '#fff'
+		backgroundColor: '#fff',
+		height: '50px',
 	},
 	indexTd: {
 		border: '1px solid #ecf0f1',
@@ -118,7 +121,8 @@ export const styles:{ [key: string]: React.CSSProperties } = {
 	image: {
 		width: '100px',
 		height: 'auto',
-		borderRadius: '4px'
+		borderRadius: '4px',
+		objectFit: 'cover'
 	},
 	actionButton: {
 		margin: '0 0.3rem',

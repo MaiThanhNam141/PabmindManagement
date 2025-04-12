@@ -55,7 +55,7 @@ const Dashboard = () => {
                     exit={{ opacity: 0, width: 0 }}
                     transition={{ duration: 0.1, delay: 0.1 }}
                     whileHover={{
-                      color: 'red',
+                      color: '#000',
                       transition: { duration: 0.1 },
                     }}
                   >

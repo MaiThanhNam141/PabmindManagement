@@ -9,8 +9,11 @@ interface AuthContextType {
   currentUser: User | null;
   dispatch: React.Dispatch<{ type: string; payload?: string | number | boolean | object | null; }>;
 }
+
+const storedUser = localStorage.getItem("user");
 export const INITIAL_STATE: AuthContextType = {
-  currentUser: JSON.parse(localStorage.getItem("user") || "{}") || null,
+  currentUser: storedUser && storedUser !== "{}" ? JSON.parse(storedUser) : null,
   dispatch: () => null,
 };
+
 export const AuthContext = createContext<AuthContextType>(INITIAL_STATE);

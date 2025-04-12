@@ -44,7 +44,7 @@ const FCM = () => {
             }
         } catch (error) {
             console.error('Error sending message to user:', error)
-            throw error;
+            throw Error('Failed to send message');
         }
     }
 
@@ -70,7 +70,7 @@ const FCM = () => {
             }
         } catch (error) {
             console.error('Error sending message:', error)
-            throw error;
+            throw Error('Failed to send message');
         }
     }
 

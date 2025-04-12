@@ -1,5 +1,5 @@
 import { Modal, Input, Form, DatePicker, Row, Col, Card, TimePicker, Select } from "antd";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback, memo } from "react";
 import dayjs from "dayjs";
 import { confirmAdd, confirmExit } from "./SwalAlert";
 import { Timestamp } from "@firebase/firestore";
@@ -9,7 +9,17 @@ const { Option } = Select;
 interface AppointmentModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	onSubmit: (data: { displayName: string; phone: string; email?: string; age: number; address?: string; servicePackage: string; topic?: string; adviseDirect: string; consultationDate: Timestamp | null }) => void;
+	onSubmit: (data: {
+		displayName: string;
+		phone: string;
+		email?: string;
+		age: number;
+		address?: string;
+		servicePackage: string;
+		topic?: string;
+		adviseDirect: string;
+		consultationDate: Timestamp | null;
+	}) => void;
 	initState?: {
 		id?: string | null;
 		consultationDate?: { seconds: number } | null;
@@ -24,22 +34,22 @@ interface AppointmentModalProps {
 	} | null;
 }
 
-const AppointmentModal: React.FC<AppointmentModalProps> = ({ isOpen, onClose, onSubmit, initState = null }) => {
+const AppointmentModal: React.FC<AppointmentModalProps> = memo(({ isOpen, onClose, onSubmit, initState = null }) => {
 	const [form] = Form.useForm();
-	const [isDirty, setIsDirty] = useState(false);
+	const [isDirty, setIsDirty] = useState<boolean>(false);
 	const [recordId, setRecordId] = useState<string | null>(null);
+	const memoizedInitState = useMemo(() => initState, [initState]);
 
 	useEffect(() => {
-		if (initState) {
-			const { id, consultationDate }: { id?: string | null; consultationDate?: { seconds: number } | null } = initState;;
-			
+		if (memoizedInitState) {
+			const { id, consultationDate }: { id?: string | null; consultationDate?: { seconds: number } | null } = memoizedInitState;
 			setRecordId(id || null);
 
 			const dateValue = consultationDate ? dayjs.unix(consultationDate.seconds) : null;
 			const timeValue = dateValue ? dayjs(dateValue.format("HH:mm"), "HH:mm") : null;
 
 			form.setFieldsValue({
-				...(typeof initState === "object" && initState !== null ? initState : {}),
+				...(memoizedInitState ? memoizedInitState : {}),
 				consultationDate: dateValue,
 				consultationTime: timeValue,
 			});
@@ -48,9 +58,10 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({ isOpen, onClose, on
 			setRecordId(null);
 		}
 		setIsDirty(false);
-	}, [initState, isOpen, form]);
+	}, [memoizedInitState, form]);
 
-	const saveForm = async () => {
+	// Callback function to handle saving form data
+	const saveForm = useCallback(async () => {
 		try {
 			const values = await form.validateFields();
 			const { consultationDate, consultationTime, ...restValues } = values;
@@ -69,14 +80,16 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({ isOpen, onClose, on
 				consultationDate: timestamp
 			};
 
-			return onSubmit(initState ? {...formattedData, id: recordId} : { ...formattedData, time: new Date()});
+			// If initState is present, we update with the id, otherwise a new record
+			return onSubmit(memoizedInitState ? { ...formattedData, id: recordId } : { ...formattedData, time: new Date() });
 		} catch (error) {
-			console.log("Validation failed:", error);
+			console.error("Validation failed:", error);
 			throw Error;
 		}
-	};
+	}, [form, memoizedInitState, recordId, onSubmit]);
 
-	const handleClose = () => {
+	// Handle closing modal with a dirty check
+	const handleClose = useCallback(() => {
 		if (!isDirty) {
 			onClose();
 			return;
@@ -85,8 +98,9 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({ isOpen, onClose, on
 		confirmExit(async () => {
 			onClose();
 		});
-	};
+	}, [isDirty, onClose]);
 
+	// Render the modal
 	return (
 		<Modal open={isOpen} onCancel={handleClose} onOk={() => confirmAdd(saveForm)} title="Thông tin lịch hẹn" okText="Lưu" cancelText="Hủy" width={800} centered>
 			<Card style={{ background: "#f9f9f9", borderRadius: 8, padding: 16 }}>
@@ -163,6 +177,6 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({ isOpen, onClose, on
 			</Card>
 		</Modal>
 	);
-};
+});
 
 export default AppointmentModal;
