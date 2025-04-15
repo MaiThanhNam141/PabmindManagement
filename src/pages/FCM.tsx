@@ -3,6 +3,9 @@ import { Loader2 } from 'lucide-react';
 import CryptoJS from 'crypto-js';
 import { confirmSendNotification, errorAlert, successAlert } from '../component/SwalAlert';
 
+const MAX_TITLE_LENGTH = 60;
+const MAX_BODY_LENGTH = 1000;
+
 const FCM = () => {
     const [title, setTitle] = useState<string>('');
     const [body, setBody] = useState<string>('');
@@ -17,10 +20,21 @@ const FCM = () => {
 
     const confirmAndSendNotification = () => {
         if (!title || !body) {
-            errorAlert("Vui lòng nhập cả tiêu đề và nội dung thông báo")
+            errorAlert("Vui lòng nhập cả tiêu đề và nội dung thông báo");
             return;
         }
-        confirmSendNotification(title, body, token, handleSend)
+
+        if (title.length > MAX_TITLE_LENGTH) {
+            errorAlert(`Tiêu đề không được vượt quá ${MAX_TITLE_LENGTH} ký tự`);
+            return;
+        }
+
+        if (body.length > MAX_BODY_LENGTH) {
+            errorAlert(`Nội dung không được vượt quá ${MAX_BODY_LENGTH} ký tự`);
+            return;
+        }
+
+        confirmSendNotification(title, body, token, handleSend);
     };
 
     const sendNotificationToUser = async (title: string, body: string, token: string) => {
@@ -111,9 +125,13 @@ const FCM = () => {
                         id="title"
                         placeholder="Nhập tiêu đề thông báo"
                         value={title}
+                        maxLength={MAX_TITLE_LENGTH}
                         onChange={(e) => setTitle(e.target.value)}
                         style={styles.input}
                     />
+                    <div style={{ textAlign: 'right', fontSize: '0.75rem', color: '#666' }}>
+                        {title.length}/{MAX_TITLE_LENGTH}
+                    </div>
                 </div>
                 <div style={styles.inputGroup}>
                     <label htmlFor="body" style={styles.label}>
@@ -123,10 +141,14 @@ const FCM = () => {
                         id="body"
                         placeholder="Nhập nội dung thông báo"
                         value={body}
+                        maxLength={MAX_BODY_LENGTH}
                         onChange={(e) => setBody(e.target.value)}
                         rows={6}
                         style={styles.input}
                     />
+                    <div style={{ textAlign: 'right', fontSize: '0.75rem', color: '#666' }}>
+                        {body.length}/{MAX_BODY_LENGTH}
+                    </div>
                 </div>
                 <div style={styles.inputGroup}>
                     <label htmlFor="token" style={styles.label}>
