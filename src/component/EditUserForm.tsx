@@ -2,6 +2,7 @@ import { useState } from "react";
 import "../style/EditUserForm.css";
 import Swal from "sweetalert2";
 import { Timestamp } from "@firebase/firestore";
+import { confirmExit } from "./SwalAlert";
 
 interface GAD7 {
     qIndex: number;
@@ -42,11 +43,12 @@ const convertDateTimeLocalToTimestamp = (dateString: string) => {
 };
 
 const EditUserForm = ({ user, onSave, onClose }: { user: User; onSave: (data: User) => void; onClose: () => void }) => {
+    const [isDirty, setIsDirty] = useState<boolean>(false);
     const [formData, setFormData] = useState({
         id: user.id || "",
         displayName: user.displayName || "",
         email: user.email || "",
-        startDateMember: user.startDateMember? convertTimestampToDateTimeLocal(user.startDateMember) : null,
+        startDateMember: user.startDateMember ? convertTimestampToDateTimeLocal(user.startDateMember) : null,
         endDateMember: user.endDateMember ? convertTimestampToDateTimeLocal(user.endDateMember) : null,
         eq: user.eq || 0,
         age: user.age || 0,
@@ -73,6 +75,7 @@ const EditUserForm = ({ user, onSave, onClose }: { user: User; onSave: (data: Us
             ...formData,
             [name]: type === "checkbox" ? checked : value,
         });
+        setIsDirty(true);
     };
 
     const handleSubmit = (e: { preventDefault: () => void; }) => {
@@ -102,9 +105,20 @@ const EditUserForm = ({ user, onSave, onClose }: { user: User; onSave: (data: Us
     };
 
     const handleClose = (e: React.MouseEvent<HTMLElement>) => {
-        if ((e.target as HTMLElement).classList.contains('modal-overlay')) {
-            onClose();
+        if (!isDirty) {
+            if ((e.target as HTMLElement).classList.contains('modal-overlay')) {
+                onClose();
+            }
+            return;
         }
+
+        confirmExit(async () => {
+            if ((e.target as HTMLElement).classList.contains('modal-overlay')) {
+                onClose();
+            }
+            return;
+        });
+
     };
 
     const removeUserType = (index: number) => {
@@ -123,7 +137,6 @@ const EditUserForm = ({ user, onSave, onClose }: { user: User; onSave: (data: Us
             <div className="modal-content">
                 <h2>Chỉnh sửa thông tin User</h2>
                 <button className="close-button" onClick={onClose}>✖</button>
-
                 <form onSubmit={handleSubmit}>
                     <div className="form-grid">
                         {/* Nhóm thông tin cá nhân */}
